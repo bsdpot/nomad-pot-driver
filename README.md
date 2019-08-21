@@ -53,7 +53,8 @@ The pot task driver supports the following parameters:
 * `commad` - Command that is going to be executed once the jail is started.
 
 * `network_mode` - (Optional) Defines the network mode of the pot. Default: **"public-bridge"**
- Possible values are:
+
+  Possible values are:
   **"public-bridge"**  pot creates an internal virtual network with a NAT table where all traffic is going to be sent.
   **"host"** pot bounds the jail directly to a host port.
 
