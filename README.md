@@ -2,14 +2,6 @@
 <img width="350" src="mascot.png" />
 </p>
 
----
-layout: "docs"
-page_title: "Drivers: pot-task-driver"
-sidebar_current: "docs-drivers-community-pot-task-driver"
-description: |-
-  The Pot task driver is used to run application containers using FreeBSD pot.
----
-
 # Pot task Driver
 
 Name: `pot-task-driver`
