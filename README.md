@@ -11,7 +11,7 @@ description: |-
 Name: `pot-task-driver`
 
 The Pot task driver provides an interface for using [pot][pot-github-repo] for dynamically running applications inside a FreeBSD Jail. 
-You can download the external pot-task-driver [here][pot-task-driver]. For more detailed instructions on how to set up and use this driver, please refer to the [guide][pot-task-guide].
+You can download the external pot-task-driver [here][pot-task-driver].
 
 ## Task Configuration
 
@@ -55,6 +55,7 @@ The pot task driver supports the following parameters:
 * `network_mode` - (Optional) Defines the network mode of the pot. Default: **"public-bridge"**
 
   Possible values are:
+  
   **"public-bridge"**  pot creates an internal virtual network with a NAT table where all traffic is going to be sent.
   **"host"** pot bounds the jail directly to a host port.
 
