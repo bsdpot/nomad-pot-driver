@@ -1,3 +1,7 @@
+<p align="center">
+<img width="350" src="mascot.png" />
+</p>
+
 ---
 layout: "docs"
 page_title: "Drivers: pot-task-driver"
