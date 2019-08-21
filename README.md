@@ -53,6 +53,7 @@ The pot task driver supports the following parameters:
   Possible values are:
   
   **"public-bridge"**  pot creates an internal virtual network with a NAT table where all traffic is going to be sent.
+  
   **"host"** pot bounds the jail directly to a host port.
 
 * `port_map` - (Optional) Sets the port on which the application is listening inside of the jail. If not set, the application will inherit the port configuration from the image.
