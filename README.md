@@ -73,7 +73,12 @@ The pot task driver supports the following parameters:
 * The pot-task-driver binary placed in the [plugin_dir][plugin_dir] directory. 
 * Installing [pot][pot-github-repo] and following the install [guide][pot-install-guide].
 * Webserver from where to serve the images. (simple file server)
+* Following lines need to be included in your rc.conf
 
+```
+nomad_user="root"
+nomad_env="PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/sbin:/bin"
+```
 
 [pot-task-driver]: https://github.com/trivago/pot-task-driver
 [plugin_dir]: /docs/configuration/index.html#plugin_dir
