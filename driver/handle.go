@@ -77,13 +77,16 @@ func (h *taskHandle) run() {
 // before killing the container with SIGKILL.
 func (h *taskHandle) shutdown(timeout time.Duration) error {
 	// Wait for the process to finish or kill it after a timeout (whichever happens first):
+	var fixTimeOut time.Duration
+	fixTimeOut = 5 * time.Second
+
 	h.procState = drivers.TaskStateExited
 	done := make(chan error, 1)
 	go func() {
 		done <- h.syexec.cmd.Wait()
 	}()
 	select {
-	case <-time.After(timeout * time.Second):
+	case <-time.After(fixTimeOut * time.Second):
 
 		if err := h.syexec.cmd.Process.Kill(); err != nil {
 			return fmt.Errorf("failed to kill process: %v ", err)
