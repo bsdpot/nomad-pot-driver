@@ -421,10 +421,6 @@ func (d *Driver) StopTask(taskID string, timeout time.Duration, signal string) e
 		return fmt.Errorf("unable to destroy container: %v", err)
 	}
 
-	if err := handle.shutdown(timeout); err != nil {
-		return fmt.Errorf("executor Shutdown failed: %v", err)
-	}
-
 	return nil
 }
 
