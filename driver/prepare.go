@@ -57,7 +57,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 
 	se.argvCreate = append(argv, taskCfg.Args...)
 
-	potName := cfg.JobName + "_" + cfg.AllocID
+	potName := completeName + "_" + cfg.AllocID
 
 	//Mount local
 	commandLocal := "mount-in -p " + potName + " -d " + cfg.TaskDir().LocalDir + " -m /local"
