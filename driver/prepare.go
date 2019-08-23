@@ -52,7 +52,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 		}
 	}
 
-	completeName := cfg.JobName + cfg.TaskGroupName
+	completeName := cfg.JobName + cfg.Name
 	argv = append(argv, "-n", completeName, "-v")
 
 	se.argvCreate = append(argv, taskCfg.Args...)
