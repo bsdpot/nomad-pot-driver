@@ -106,7 +106,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	//Set soft memory limit
 	memoryLimit := cfg.Resources.NomadResources.Memory.MemoryMB
 	sMemoryLimit := strconv.FormatInt(memoryLimit, 10)
-	argvMem := potBIN + " set-rss -M " + sMemoryLimit + " -p " + potName
+	argvMem := potBIN + " set-rss -M " + sMemoryLimit + "M -p " + potName
 	se.argvMem = argvMem
 
 	argvStart := make([]string, 0, 50)
