@@ -103,6 +103,12 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 		se.argvMountReadOnly = argvMountReadOnly
 	}
 
+	//Set soft memory limit
+	memoryLimit := cfg.Resources.NomadResources.Memory.MemoryMB
+	sMemoryLimit := strconv.FormatInt(memoryLimit, 10)
+	argvMem := potBIN + " set-rss -M " + sMemoryLimit + " -p " + potName
+	se.argvMem = argvMem
+
 	argvStart := make([]string, 0, 50)
 	argvStart = append(argvStart, "start", potName)
 	se.argvStart = argvStart
@@ -180,7 +186,7 @@ func prepareStop(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 
 	argv = append(argv, "stop")
 
-	completeName := cfg.JobName + "_" + cfg.AllocID
+	completeName := cfg.JobName + cfg.Name + "_" + cfg.AllocID
 
 	argv = append(argv, completeName)
 
@@ -200,7 +206,7 @@ func prepareDestroy(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 
 	argv = append(argv, "destroy")
 
-	completeName := cfg.JobName + "_" + cfg.AllocID
+	completeName := cfg.JobName + cfg.Name + "_" + cfg.AllocID
 
 	argv = append(argv, "-p", completeName)
 

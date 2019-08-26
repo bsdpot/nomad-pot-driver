@@ -25,6 +25,7 @@ type syexec struct {
 	argvCopy          []string
 	argvMount         []string
 	argvMountReadOnly []string
+	argvMem           string
 	argvStart         []string
 	argvStop          []string
 	argvStats         []string
@@ -199,7 +200,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			ws := exitError.Sys().(syscall.WaitStatus)
 			s.exitCode = ws.ExitStatus()
 		} else {
-			s.logger.Error("Could not get exit code for failed program: ", "pot", s.argvStart)
+			s.logger.Error("Could not get exit code for failed program: ", "pot", s.argvCreate)
 			s.exitCode = defaultFailedCode
 		}
 	} else {
@@ -207,14 +208,6 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 		ws := cmd.ProcessState.Sys().(syscall.WaitStatus)
 		s.exitCode = ws.ExitStatus()
 	}
-
-	/*
-		s.logger.Info("After prepare command...")
-		s.logger.Info("Prepare Output Stdout: ", outb.String())
-		s.logger.Info("Prepare Output Stderr: ", errb.String())
-		s.logger.Info("launching command", strings.Join(s.argvCreate, " "))
-		fmt.Println("out:", outb.String(), "err:", errb.String())
-	*/
 
 	s.cmd = cmd
 
@@ -278,6 +271,17 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			}
 		}
 	}
+
+	//Set memory limit for pot
+	message := "Setting memory soft limit on jail: " + s.argvMem
+	s.logger.Debug(message)
+
+	_, err := exec.Command("bash", "-c", s.argvMem).Output()
+	if err != nil {
+		message := "Error setting memory limit for pot with err: " + err.Error()
+		s.logger.Error(message)
+	}
+
 	return nil
 }
 
