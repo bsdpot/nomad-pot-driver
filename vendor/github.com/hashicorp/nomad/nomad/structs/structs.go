@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/gorhill/cronexpr"
-	hcodec "github.com/hashicorp/go-msgpack/codec"
+	hcodec "github.com/ugorji/go/codec"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/nomad/acl"
