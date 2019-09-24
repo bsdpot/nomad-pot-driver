@@ -59,10 +59,6 @@ var (
 		"copy":            hclspec.NewAttr("copy", "list(string)", false),
 		"mount_read_only": hclspec.NewAttr("mount_read_only", "list(string)", false),
 
-		"args": hclspec.NewAttr("args", "list(string)", false),
-
-		"debug":   hclspec.NewAttr("debug", "bool", false),
-		"verbose": hclspec.NewAttr("verbose", "bool", false),
 	})
 
 	// capabilities is returned by the Capabilities RPC and indicates what
