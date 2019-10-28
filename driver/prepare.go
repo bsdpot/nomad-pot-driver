@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/nomad/client/lib/fifo"
 	"github.com/hashicorp/nomad/plugins/drivers"
+	"github.com/prometheus/common/log"
 )
 
 // prepareContainer preloads the taskcnf into args to be passed to a execCmd
@@ -21,16 +22,16 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 
 	// action can be run/exec
 
-	argv = append(argv, "prepare")
-
-	argv = append(argv, "-U", taskCfg.Image)
-
-	argv = append(argv, "-p", taskCfg.Pot)
-
-	argv = append(argv, "-t", taskCfg.Tag)
+	argv = append(argv, "prepare", "-U", taskCfg.Image, "-p", taskCfg.Pot, "-t", taskCfg.Tag)
 
 	if cfg.AllocID != "" {
 		argv = append(argv, "-a", cfg.AllocID)
+	}
+
+	if len(taskCfg.Args) > 0 {
+		for _, arg := range taskCfg.Args {
+			taskCfg.Command = taskCfg.Command + " " + arg
+		}
 	}
 
 	taskCfg.Command = "\"" + taskCfg.Command + "\""
@@ -39,8 +40,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	if taskCfg.NetworkMode != "" {
 		argv = append(argv, "-N", taskCfg.NetworkMode)
 	} else if len(taskCfg.PortMap) > 0 {
-		argv = append(argv, "-N", "public-bridge")
-		argv = append(argv, "-i", "auto")
+		argv = append(argv, "-N", "public-bridge", "-i", "auto")
 	}
 
 	if taskCfg.NetworkMode != "host" {
@@ -101,6 +101,18 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 			argvMountReadOnly = append(argvMountReadOnly, command)
 		}
 		se.argvMountReadOnly = argvMountReadOnly
+	}
+
+	// Set env variables
+	if len(taskCfg.Env) > 0 {
+		//Debugging info
+		log.Info("Env variables: ", taskCfg.Env)
+		command := potBIN + " set-env -p " + potName + " "
+		for _, env := range taskCfg.Env {
+			command = command + " -E " + env
+		}
+		argvEnv := command
+		se.argvEnv = argvEnv
 	}
 
 	//Set soft memory limit

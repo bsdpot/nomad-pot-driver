@@ -26,6 +26,7 @@ type syexec struct {
 	argvMount         []string
 	argvMountReadOnly []string
 	argvMem           string
+	argvEnv           string
 	argvStart         []string
 	argvStop          []string
 	argvStats         []string
@@ -272,11 +273,21 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 		}
 	}
 
+	// Set env variable inside the pot
+	envMessage := "Setting env variables inside the pot: " + s.argvEnv
+	s.logger.Debug(envMessage)
+
+	_, err := exec.Command("bash", "-c", s.argvEnv).Output()
+	if err != nil {
+		message := "Error setting env variables for pot with err: " + err.Error()
+		s.logger.Error(message)
+	}
+
 	//Set memory limit for pot
 	message := "Setting memory soft limit on jail: " + s.argvMem
 	s.logger.Debug(message)
 
-	_, err := exec.Command("bash", "-c", s.argvMem).Output()
+	_, err = exec.Command("bash", "-c", s.argvMem).Output()
 	if err != nil {
 		message := "Error setting memory limit for pot with err: " + err.Error()
 		s.logger.Error(message)

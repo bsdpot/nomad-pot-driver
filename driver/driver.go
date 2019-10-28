@@ -52,13 +52,14 @@ var (
 		"image":           hclspec.NewAttr("image", "string", true),
 		"pot":             hclspec.NewAttr("pot", "string", true),
 		"tag":             hclspec.NewAttr("tag", "string", true),
-		"command":         hclspec.NewAttr("command", "string", false),
+		"command":         hclspec.NewAttr("command", "string", true),
+		"args":            hclspec.NewAttr("env", "list(string)", false),
 		"port_map":        hclspec.NewAttr("port_map", "list(map(string))", false),
 		"network_mode":    hclspec.NewAttr("network_mode", "string", false),
 		"mount":           hclspec.NewAttr("mount", "list(string)", false),
 		"copy":            hclspec.NewAttr("copy", "list(string)", false),
 		"mount_read_only": hclspec.NewAttr("mount_read_only", "list(string)", false),
-
+		"env":             hclspec.NewAttr("env", "list(string)", false),
 	})
 
 	// capabilities is returned by the Capabilities RPC and indicates what
@@ -111,12 +112,12 @@ type TaskConfig struct {
 	Alloc string `codec:"alloc"`
 
 	// Command can be run or exec , shell is not supported via plugin
-	Command string `codec:"command"`
+	Command string   `codec:"command"`
+	Args    []string `codec:"args"`
 
 	//Port    []string          `codec:"port"`
 	PortMap hclutils.MapStrStr `codec:"port_map"`
 	Name    string             `codec:"name"`
-	Args    []string           `codec:"args"`
 
 	//Network Mode
 	NetworkMode string `codec:"network_mode"`
@@ -128,6 +129,7 @@ type TaskConfig struct {
 	Mount         []string `codec:"mount"`           // Host-Volumes to mount in, syntax: /path/to/host/directory:/destination/path/in/container
 	MountReadOnly []string `codec:"mount_read_only"` // Host-Volumes to mount in, syntax: /path/to/host/directory:/destination/path/in/container
 	Copy          []string `codec:"copy"`            // Files in host to copy in, syntax: /path/to/host/file.ext:/destination/path/in/container/file.ext
+	Env           []string `codec:"env"`             // Enviromental variables
 }
 
 // TaskState is the state which is encoded in the handle returned in
