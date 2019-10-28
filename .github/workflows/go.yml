@@ -17,4 +17,4 @@ jobs:
       uses: actions/checkout@v1
 
     - name: Build
-      run: GO113VENDOREXPERIMENT=1 GOOS=freebsd go build -v .
+      run: GOFLAGS=-mod=vendor GOOS=freebsd go build -v .
