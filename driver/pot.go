@@ -27,6 +27,7 @@ type syexec struct {
 	argvMountReadOnly []string
 	argvMem           string
 	argvEnv           string
+	argvExtraHosts    string
 	argvStart         []string
 	argvStop          []string
 	argvStats         []string
@@ -280,6 +281,16 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	_, err := exec.Command("bash", "-c", s.argvEnv).Output()
 	if err != nil {
 		message := "Error setting env variables for pot with err: " + err.Error()
+		s.logger.Error(message)
+	}
+
+	// Set hosts file inside the pot
+	hostsMessage := "Setting env variables inside the pot: " + s.argvExtraHosts
+	s.logger.Debug(hostsMessage)
+
+	_, err = exec.Command("bash", "-c", s.argvExtraHosts).Output()
+	if err != nil {
+		message := "Error setting hosts file for pot with err: " + err.Error()
 		s.logger.Error(message)
 	}
 

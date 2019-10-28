@@ -9,7 +9,6 @@ import (
 
 	"github.com/hashicorp/nomad/client/lib/fifo"
 	"github.com/hashicorp/nomad/plugins/drivers"
-	"github.com/prometheus/common/log"
 )
 
 // prepareContainer preloads the taskcnf into args to be passed to a execCmd
@@ -80,15 +79,13 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	}
 
 	if len(taskCfg.Mount) > 0 {
-		argvMount := make([]string, 0, 50)
 		for _, file := range taskCfg.Mount {
 			split := strings.Split(file, ":")
 			source := split[0]
 			destination := split[1]
 			command := "mount-in -p " + potName + " -d " + source + " -m " + destination
-			argvMount = append(argvMount, command)
+			se.argvMount = append(se.argvMount, command)
 		}
-		se.argvMount = argvMount
 	}
 
 	if len(taskCfg.MountReadOnly) > 0 {
@@ -104,15 +101,21 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	}
 
 	// Set env variables
-	if len(taskCfg.Env) > 0 {
-		//Debugging info
-		log.Info("Env variables: ", taskCfg.Env)
+	if len(cfg.EnvList()) > 0 {
 		command := potBIN + " set-env -p " + potName + " "
-		for _, env := range taskCfg.Env {
-			command = command + " -E " + env
+		for name, env := range cfg.Env {
+			command = command + " -E " + name + "=" + env
 		}
 		argvEnv := command
 		se.argvEnv = argvEnv
+	}
+
+	if len(taskCfg.ExtraHosts) > 0 {
+		hostCommand := potBIN + " set-hosts -p " + potName
+		for _, host := range taskCfg.ExtraHosts {
+			hostCommand = hostCommand + " -H " + host
+		}
+		se.argvExtraHosts = hostCommand
 	}
 
 	//Set soft memory limit

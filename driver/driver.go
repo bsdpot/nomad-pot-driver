@@ -59,7 +59,7 @@ var (
 		"mount":           hclspec.NewAttr("mount", "list(string)", false),
 		"copy":            hclspec.NewAttr("copy", "list(string)", false),
 		"mount_read_only": hclspec.NewAttr("mount_read_only", "list(string)", false),
-		"env":             hclspec.NewAttr("env", "list(string)", false),
+		"extra_hosts":     hclspec.NewAttr("extra_hosts", "list(string)", false),
 	})
 
 	// capabilities is returned by the Capabilities RPC and indicates what
@@ -129,7 +129,7 @@ type TaskConfig struct {
 	Mount         []string `codec:"mount"`           // Host-Volumes to mount in, syntax: /path/to/host/directory:/destination/path/in/container
 	MountReadOnly []string `codec:"mount_read_only"` // Host-Volumes to mount in, syntax: /path/to/host/directory:/destination/path/in/container
 	Copy          []string `codec:"copy"`            // Files in host to copy in, syntax: /path/to/host/file.ext:/destination/path/in/container/file.ext
-	Env           []string `codec:"env"`             // Enviromental variables
+	ExtraHosts    []string `codec:"extra_hosts"`     // ExtraHosts a list of hosts, given as host:IP, to be added to /etc/hosts
 }
 
 // TaskState is the state which is encoded in the handle returned in
