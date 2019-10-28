@@ -25,4 +25,4 @@ jobs:
         fi
 
     - name: Build
-      run: GOOS=freebsd go build -v .
+      run: GOOS=freebsd go build -mod vendor -v .
