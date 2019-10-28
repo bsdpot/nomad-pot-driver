@@ -53,7 +53,7 @@ var (
 		"pot":             hclspec.NewAttr("pot", "string", true),
 		"tag":             hclspec.NewAttr("tag", "string", true),
 		"command":         hclspec.NewAttr("command", "string", true),
-		"args":            hclspec.NewAttr("env", "list(string)", false),
+		"args":            hclspec.NewAttr("args", "list(string)", false),
 		"port_map":        hclspec.NewAttr("port_map", "list(map(string))", false),
 		"network_mode":    hclspec.NewAttr("network_mode", "string", false),
 		"mount":           hclspec.NewAttr("mount", "list(string)", false),
