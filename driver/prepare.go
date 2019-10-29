@@ -21,16 +21,16 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 
 	// action can be run/exec
 
-	argv = append(argv, "prepare")
-
-	argv = append(argv, "-U", taskCfg.Image)
-
-	argv = append(argv, "-p", taskCfg.Pot)
-
-	argv = append(argv, "-t", taskCfg.Tag)
+	argv = append(argv, "prepare", "-U", taskCfg.Image, "-p", taskCfg.Pot, "-t", taskCfg.Tag)
 
 	if cfg.AllocID != "" {
 		argv = append(argv, "-a", cfg.AllocID)
+	}
+
+	if len(taskCfg.Args) > 0 {
+		for _, arg := range taskCfg.Args {
+			taskCfg.Command = taskCfg.Command + " " + arg
+		}
 	}
 
 	taskCfg.Command = "\"" + taskCfg.Command + "\""
@@ -39,8 +39,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	if taskCfg.NetworkMode != "" {
 		argv = append(argv, "-N", taskCfg.NetworkMode)
 	} else if len(taskCfg.PortMap) > 0 {
-		argv = append(argv, "-N", "public-bridge")
-		argv = append(argv, "-i", "auto")
+		argv = append(argv, "-N", "public-bridge", "-i", "auto")
 	}
 
 	if taskCfg.NetworkMode != "host" {
@@ -80,15 +79,13 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	}
 
 	if len(taskCfg.Mount) > 0 {
-		argvMount := make([]string, 0, 50)
 		for _, file := range taskCfg.Mount {
 			split := strings.Split(file, ":")
 			source := split[0]
 			destination := split[1]
 			command := "mount-in -p " + potName + " -d " + source + " -m " + destination
-			argvMount = append(argvMount, command)
+			se.argvMount = append(se.argvMount, command)
 		}
-		se.argvMount = argvMount
 	}
 
 	if len(taskCfg.MountReadOnly) > 0 {
@@ -101,6 +98,24 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 			argvMountReadOnly = append(argvMountReadOnly, command)
 		}
 		se.argvMountReadOnly = argvMountReadOnly
+	}
+
+	// Set env variables
+	if len(cfg.EnvList()) > 0 {
+		command := potBIN + " set-env -p " + potName + " "
+		for name, env := range cfg.Env {
+			command = command + " -E " + name + "=" + env
+		}
+		argvEnv := command
+		se.argvEnv = argvEnv
+	}
+
+	if len(taskCfg.ExtraHosts) > 0 {
+		hostCommand := potBIN + " set-hosts -p " + potName
+		for _, host := range taskCfg.ExtraHosts {
+			hostCommand = hostCommand + " -H " + host
+		}
+		se.argvExtraHosts = hostCommand
 	}
 
 	//Set soft memory limit
