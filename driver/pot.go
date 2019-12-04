@@ -74,7 +74,7 @@ func init() {
 }
 
 func (s *syexec) startContainer(commandCfg *drivers.TaskConfig) error {
-	s.logger.Debug("launching command", strings.Join(s.argvStart, " "))
+	s.logger.Debug("launching StartContainer command", strings.Join(s.argvStart, " "))
 
 	cmd := exec.Command(potBIN, s.argvStart...)
 
@@ -117,7 +117,7 @@ func (s *syexec) startContainer(commandCfg *drivers.TaskConfig) error {
 }
 
 func (s *syexec) stopContainer(commandCfg *drivers.TaskConfig) error {
-	s.logger.Debug("launching command", strings.Join(s.argvStop, " "))
+	s.logger.Debug("launching StopContainer command", strings.Join(s.argvStop, " "))
 
 	cmd := exec.Command(potBIN, s.argvStop...)
 
@@ -133,7 +133,7 @@ func (s *syexec) stopContainer(commandCfg *drivers.TaskConfig) error {
 			ws := exitError.Sys().(syscall.WaitStatus)
 			s.exitCode = ws.ExitStatus()
 		} else {
-			s.logger.Error("Could not get exit code for failed program: ", "pot", s.argvStop)
+			s.logger.Error("Could not get exit code for stopping container ", "pot", s.argvStop)
 			s.exitCode = defaultFailedCode
 		}
 	} else {
@@ -150,7 +150,7 @@ func (s *syexec) stopContainer(commandCfg *drivers.TaskConfig) error {
 
 func (s *syexec) destroyContainer(commandCfg *drivers.TaskConfig) error {
 	s.argvDestroy = append(s.argvDestroy, "-F")
-	s.logger.Debug("launching command", strings.Join(s.argvDestroy, " "))
+	s.logger.Debug("launching DestroyContainer command", strings.Join(s.argvDestroy, " "))
 
 	cmd := exec.Command(potBIN, s.argvDestroy...)
 
@@ -166,7 +166,7 @@ func (s *syexec) destroyContainer(commandCfg *drivers.TaskConfig) error {
 			ws := exitError.Sys().(syscall.WaitStatus)
 			s.exitCode = ws.ExitStatus()
 		} else {
-			s.logger.Error("Could not get exit code for failed program: ", "pot", s.argvDestroy)
+			s.logger.Error("Could not get exit code for destroying container ", "pot", s.argvDestroy)
 			s.exitCode = defaultFailedCode
 		}
 	} else {
@@ -182,7 +182,7 @@ func (s *syexec) destroyContainer(commandCfg *drivers.TaskConfig) error {
 }
 
 func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
-	s.logger.Info("launching command", strings.Join(s.argvCreate, " "))
+	s.logger.Info("launching createContainer command", "log", strings.Join(s.argvCreate, " "))
 
 	cmd := exec.Command(potBIN, s.argvCreate...)
 
@@ -196,19 +196,25 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	cmd.Stderr = &errb
 
 	// Start the process
-	if err := cmd.Run(); err != nil {
+	var err error
+	if err = cmd.Run(); err != nil {
 		// try to get the exit code
 		if exitError, ok := err.(*exec.ExitError); ok {
 			ws := exitError.Sys().(syscall.WaitStatus)
 			s.exitCode = ws.ExitStatus()
 		} else {
-			s.logger.Error("Could not get exit code for failed program: ", "pot", s.argvCreate)
+			s.logger.Error("Could not get exit code for creating container: ", "pot", s.argvCreate)
 			s.exitCode = defaultFailedCode
 		}
 	} else {
 		// success, exitCode should be 0 if go is ok
 		ws := cmd.ProcessState.Sys().(syscall.WaitStatus)
 		s.exitCode = ws.ExitStatus()
+	}
+
+	if s.exitCode != 0 {
+		s.logger.Error("Error creating container", "err", err)
+		return err
 	}
 
 	s.cmd = cmd
@@ -222,14 +228,14 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			s.logger.Debug("Copying files on jail: ", message)
 
 			cmdFiles := potBIN + " " + command
-			output, err := exec.Command("bash", "-c", cmdFiles).Output()
+			output, err := exec.Command("sh", "-c", cmdFiles).Output()
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					ws := exitError.Sys().(syscall.WaitStatus)
 					s.logger.Error("ExitError ", ws.ExitStatus())
 					return errors.New(string(output))
 				}
-				s.logger.Error("Could not get exit code for failed program: ", "pot", command)
+				s.logger.Error("Could not get exit code for copy command ", "pot", command)
 
 			}
 		}
@@ -242,14 +248,14 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			s.logger.Debug("Mounting files on jail: ", message)
 
 			cmdVolumes := potBIN + " " + command
-			output, err := exec.Command("bash", "-c", cmdVolumes).Output()
+			output, err := exec.Command("sh", "-c", cmdVolumes).Output()
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					ws := exitError.Sys().(syscall.WaitStatus)
 					s.logger.Error("ExitError ", ws.ExitStatus())
 					return errors.New(string(output))
 				}
-				s.logger.Error("Could not get exit code for failed program: ", "pot", command)
+				s.logger.Error("Could not get exit code for mount command ", "pot", command)
 			}
 		}
 	}
@@ -261,14 +267,14 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			s.logger.Debug("Mounting READ only files on jail: ", message)
 
 			cmdVolumesRO := potBIN + " " + command
-			output, err := exec.Command("bash", "-c", cmdVolumesRO).Output()
+			output, err := exec.Command("sh", "-c", cmdVolumesRO).Output()
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					ws := exitError.Sys().(syscall.WaitStatus)
 					s.logger.Error("ExitError ", ws.ExitStatus())
 					return errors.New(string(output))
 				}
-				s.logger.Error("Could not get exit code for failed program: ", "pot", command)
+				s.logger.Error("Could not get exit code for mounting read only container ", "pot", command)
 
 			}
 		}
@@ -278,7 +284,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	envMessage := "Setting env variables inside the pot: " + s.argvEnv
 	s.logger.Debug(envMessage)
 
-	_, err := exec.Command("bash", "-c", s.argvEnv).Output()
+	_, err = exec.Command("sh", "-c", s.argvEnv).Output()
 	if err != nil {
 		message := "Error setting env variables for pot with err: " + err.Error()
 		s.logger.Error(message)
@@ -288,7 +294,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	hostsMessage := "Setting env variables inside the pot: " + s.argvExtraHosts
 	s.logger.Debug(hostsMessage)
 
-	_, err = exec.Command("bash", "-c", s.argvExtraHosts).Output()
+	_, err = exec.Command("sh", "-c", s.argvExtraHosts).Output()
 	if err != nil {
 		message := "Error setting hosts file for pot with err: " + err.Error()
 		s.logger.Error(message)
@@ -298,7 +304,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	message := "Setting memory soft limit on jail: " + s.argvMem
 	s.logger.Debug(message)
 
-	_, err = exec.Command("bash", "-c", s.argvMem).Output()
+	_, err = exec.Command("sh", "-c", s.argvMem).Output()
 	if err != nil {
 		message := "Error setting memory limit for pot with err: " + err.Error()
 		s.logger.Error(message)
@@ -327,7 +333,7 @@ func (s *syexec) containerStats(commandCfg *drivers.TaskConfig) (stats potStats,
 			ws := exitError.Sys().(syscall.WaitStatus)
 			s.exitCode = ws.ExitStatus()
 		} else {
-			s.logger.Error("Could not get exit code for failed program: ", "pot", s.argvStats)
+			s.logger.Error("Could not get exit code for container stats: ", "pot", s.argvStats)
 			s.exitCode = defaultFailedCode
 		}
 	} else {
@@ -354,4 +360,62 @@ func (s *syexec) containerStats(commandCfg *drivers.TaskConfig) (stats potStats,
 	}
 
 	return potStats, nil
+}
+
+func (s *syexec) checkContainerAlive(commandCfg *drivers.TaskConfig) int {
+	s.logger.Trace("Checking if pot is alive", "Checking")
+	completeName := commandCfg.JobName + commandCfg.Name
+	potName := completeName + "_" + commandCfg.AllocID
+	s.logger.Trace("Allocation name beeing check for liveness", "alive", potName)
+
+	psCommand := "/bin/sh /usr/local/bin/pot start " + potName
+	pidCommand := "pgrep -f '" + psCommand + "'"
+	s.logger.Trace("Command to execute", "alive", pidCommand)
+	output, err := exec.Command("sh", "-c", pidCommand).Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			ws := exitError.Sys().(syscall.WaitStatus)
+			s.logger.Error("ExitError ", ws.ExitStatus())
+			return 0
+		}
+		s.logger.Error("Could not get exit code for ps command ", "pot", err)
+	}
+	pidString := string(output)
+	pidString = strings.TrimSpace(pidString)
+	s.logger.Trace("Command output:", "alive", pidString)
+	pid, err := strconv.Atoi(pidString)
+	if err != nil {
+		s.logger.Error("Error converting PID into int", "alive", "0")
+		return 0
+	}
+	s.logger.Trace("Got PID", "alive", pid)
+	return pid
+}
+
+func (s *syexec) checkContainerExists(commandCfg *drivers.TaskConfig) int {
+	s.logger.Debug("Checking if pot is alive")
+	completeName := commandCfg.JobName + commandCfg.Name
+	potName := completeName + "_" + commandCfg.AllocID
+	s.logger.Debug("Allocation name beeing check for liveness", "alive", potName)
+
+	pidCommand := "/usr/local/bin/pot ls -q | grep " + potName
+	s.logger.Debug("Command to execute", "exists", pidCommand)
+
+	output, err := exec.Command("sh", "-c", pidCommand).Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			ws := exitError.Sys().(syscall.WaitStatus)
+			s.logger.Error("ExitError ", ws.ExitStatus())
+			return 0
+		}
+		s.logger.Error("Could not get exit code for ps command ", "pot", err)
+	}
+	result := string(output)
+	result = strings.TrimSpace(result)
+	s.logger.Debug("EXIST EXIST EXIST EXIST", "Result", result)
+	if result == potName {
+		return 1
+	}
+
+	return 0
 }
