@@ -363,7 +363,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		return nil, nil, fmt.Errorf("failed to decode driver config in STARTTASK: %v", err)
 	}
 
-	d.logger.Debug("ESTE StartTask", "driverConfig", driverConfig)
+	d.logger.Trace("StartTask", "driverConfig", driverConfig)
 
 	handle := drivers.NewTaskHandle(taskHandleVersion)
 	handle.Config = cfg
@@ -373,7 +373,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	se.logger = d.logger
 	alive := se.checkContainerAlive(cfg)
 	if alive == 0 {
-		d.logger.Debug("ESTE StartTask", "Container not alive", alive)
+		d.logger.Trace("StartTask", "Container not alive", alive)
 		exists := se.checkContainerExists(cfg)
 		if exists == 0 {
 			if err := se.createContainer(cfg); err != nil {
@@ -381,15 +381,15 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 				se.destroyContainer(cfg)
 				return nil, nil, fmt.Errorf("unable to create container: %v", err)
 			}
-			d.logger.Debug("ESTE StartTask", "Created container, se:", se)
+			d.logger.Trace("StartTask", "Created container, se:", se)
 
 			if err := se.startContainer(cfg); err != nil {
 				se.destroyContainer(cfg)
 				return nil, nil, fmt.Errorf("unable to start container: %v", err)
 			}
-			d.logger.Debug("ESTE StartTask", "Started task, se", se)
+			d.logger.Trace("StartTask", "Started task, se", se)
 		} else {
-			d.logger.Debug("ESTE StartTask", "Container existed, se", se)
+			d.logger.Trace("StartTask", "Container existed, se", se)
 			if err := se.startContainer(cfg); err != nil {
 				se.destroyContainer(cfg)
 				return nil, nil, fmt.Errorf("unable to start container: %v", err)
@@ -407,7 +407,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 				Pid: alive,
 			},
 		}
-		d.logger.Debug("START TASK", "RECOVER TASK cmd", se.cmd)
+		d.logger.Trace("StartTask", "RECOVER TASK cmd", se.cmd)
 	}
 	h := &taskHandle{
 		syexec:     se,
@@ -425,7 +425,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		StartedAt:     h.startedAt,
 	}
 
-	d.logger.Debug("START TASK", "taskState", driverState)
+	d.logger.Trace("START TASK", "taskState", driverState)
 
 	if err := handle.SetDriverState(&driverState); err != nil {
 		d.logger.Error("failed to start task, error setting driver state", "error", err)
@@ -434,7 +434,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		return nil, nil, fmt.Errorf("failed to set driver state: %v", err)
 	}
 
-	d.logger.Debug("START TASK", "taskState", driverState)
+	d.logger.Trace("START TASK", "taskState", driverState)
 
 	d.tasks.Set(cfg.ID, h)
 	if alive == 0 {
@@ -442,9 +442,9 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	}
 
 	go d.potWait(cfg.ID, se)
-	d.logger.Debug("###########################################################################################################################################")
-	d.logger.Debug("########################################################/STARTTASK#########################################################################")
-	d.logger.Debug("###########################################################################################################################################")
+	d.logger.Trace("###########################################################################################################################################")
+	d.logger.Trace("########################################################/STARTTASK#########################################################################")
+	d.logger.Trace("###########################################################################################################################################")
 	return handle, nil, nil
 }
 
