@@ -396,10 +396,10 @@ func (s *syexec) checkContainerExists(commandCfg *drivers.TaskConfig) int {
 	s.logger.Debug("Checking if pot is alive")
 	completeName := commandCfg.JobName + commandCfg.Name
 	potName := completeName + "_" + commandCfg.AllocID
-	s.logger.Debug("Allocation name beeing check for liveness", "alive", potName)
+	s.logger.Trace("Allocation name beeing check for liveness", "alive", potName)
 
 	pidCommand := "/usr/local/bin/pot ls -q | grep " + potName
-	s.logger.Debug("Command to execute", "exists", pidCommand)
+	s.logger.Trace("Command to execute", "exists", pidCommand)
 
 	output, err := exec.Command("sh", "-c", pidCommand).Output()
 	if err != nil {
@@ -412,7 +412,7 @@ func (s *syexec) checkContainerExists(commandCfg *drivers.TaskConfig) int {
 	}
 	result := string(output)
 	result = strings.TrimSpace(result)
-	s.logger.Debug("EXIST EXIST EXIST EXIST", "Result", result)
+	s.logger.Trace("EXIST", "Result", result)
 	if result == potName {
 		return 1
 	}

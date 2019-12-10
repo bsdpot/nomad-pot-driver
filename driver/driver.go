@@ -251,10 +251,10 @@ func (d *Driver) buildFingerprint() *drivers.Fingerprint {
 
 // RecoverTask try to recover a failed task, if not return error
 func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
-	d.logger.Debug("###########################################################################################################################################")
-	d.logger.Debug("########################################################RECOVER-TASK#######################################################################")
-	d.logger.Debug("###########################################################################################################################################")
-	d.logger.Debug("RECOVER TASK", "ID", handle.Config.ID)
+	d.logger.Trace("###########################################################################################################################################")
+	d.logger.Trace("########################################################RECOVER-TASK#######################################################################")
+	d.logger.Trace("###########################################################################################################################################")
+	d.logger.Trace("RECOVER TASK", "ID", handle.Config.ID)
 	if handle == nil {
 		return fmt.Errorf("error: handle cannot be nil")
 	}
@@ -273,10 +273,10 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		d.logger.Error("failed to recover task, error setting driver state", "error", err)
 	}*/
 
-	d.logger.Debug("RECOVER TASK", "taskState", taskState)
+	d.logger.Trace("RECOVER TASK", "taskState", taskState)
 
 	var driverConfig TaskConfig
-	d.logger.Debug("TASKCONFIG RECOVER", "TASKCONFIG RECOVER", taskState.TaskConfig)
+	d.logger.Trace("TASKCONFIG RECOVER", "TASKCONFIG RECOVER", taskState.TaskConfig)
 	/*if err := taskState.TaskConfig.DecodeDriverConfig(&driverConfig); err != nil {
 		return fmt.Errorf("failed to decode driver config in RESTORETASK: %v", err)
 	}*/
@@ -323,7 +323,7 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		StartedAt:     h.startedAt,
 	}
 
-	d.logger.Debug("RECOVER TASK", "taskState before", driverState)
+	d.logger.Trace("RECOVER TASK", "taskState before", driverState)
 
 	if err := handle.SetDriverState(&driverState); err != nil {
 		d.logger.Error("failed to start task, error setting driver state", "error", err)
@@ -332,32 +332,30 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		return fmt.Errorf("failed to set driver state: %v", err)
 	}
 
-	d.logger.Debug("RECOVER TASK", "taskState after", driverState)
+	d.logger.Trace("RECOVER TASK", "taskState after", driverState)
 
 	d.tasks.Set(taskState.TaskConfig.ID, h)
 
-	d.logger.Debug("RECOVER TASK", "h", h)
+	d.logger.Trace("RECOVER TASK", "h", h)
 	if alive == 0 {
 		go h.run()
 	}
 
 	go d.recoverWait(handle.Config.ID, se)
 
-	d.logger.Debug("###########################################################################################################################################")
-	d.logger.Debug("########################################################/RECOVER-TASK######################################################################")
-	d.logger.Debug("###########################################################################################################################################")
+	d.logger.Trace("###########################################################################################################################################")
+	d.logger.Trace("########################################################/RECOVER-TASK######################################################################")
+	d.logger.Trace("###########################################################################################################################################")
 	return nil
 }
 
 // StartTask setup the task exec and calls the container excecutor
 func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drivers.DriverNetwork, error) {
-	d.logger.Debug("###########################################################################################################################################")
-	d.logger.Debug("########################################################STARTTASK##########################################################################")
-	d.logger.Debug("###########################################################################################################################################")
-	if taskhandle, ok := d.tasks.Get(cfg.ID); ok {
+	d.logger.Trace("###########################################################################################################################################")
+	d.logger.Trace("########################################################STARTTASK##########################################################################")
+	d.logger.Trace("###########################################################################################################################################")
+	if _, ok := d.tasks.Get(cfg.ID); ok {
 		return nil, nil, fmt.Errorf("task with ID %q already started", cfg.ID)
-	} else {
-		d.logger.Debug("ESTE StartTask", "taskhandle", taskhandle)
 	}
 
 	var driverConfig TaskConfig
