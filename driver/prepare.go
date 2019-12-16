@@ -1,6 +1,7 @@
 package pot
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,7 +13,7 @@ import (
 )
 
 // prepareContainer preloads the taskcnf into args to be passed to a execCmd
-func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
+func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, error) {
 	argv := make([]string, 0, 50)
 	var se syexec
 	se.taskConfig = taskCfg
@@ -28,14 +29,21 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	}
 
 	if len(taskCfg.Args) > 0 {
+		if taskCfg.Command == "" {
+			err := errors.New("command can not be empty if arguments are provided")
+			fmt.Println("command can not be empty if arguments are provided")
+			return se, err
+		}
+
 		for _, arg := range taskCfg.Args {
 			taskCfg.Command = taskCfg.Command + " " + arg
 		}
 	}
 
-	taskCfg.Command = "\"" + taskCfg.Command + "\""
-	argv = append(argv, "-c", taskCfg.Command)
-
+	if taskCfg.Command != "" {
+		taskCfg.Command = "\"" + taskCfg.Command + "\""
+		argv = append(argv, "-c", taskCfg.Command)
+	}
 	if taskCfg.NetworkMode != "" {
 		argv = append(argv, "-N", taskCfg.NetworkMode)
 	} else if len(taskCfg.PortMap) > 0 {
@@ -54,7 +62,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	completeName := cfg.JobName + cfg.Name
 	argv = append(argv, "-n", completeName, "-v")
 
-	se.argvCreate = append(argv, taskCfg.Args...)
+	se.argvCreate = argv
 
 	potName := completeName + "_" + cfg.AllocID
 
@@ -140,7 +148,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	argvStats = append(argvStats, "get-rss", "-p", potName, "-J")
 	se.argvStats = argvStats
 
-	return se
+	return se, nil
 }
 
 type nopCloser struct {

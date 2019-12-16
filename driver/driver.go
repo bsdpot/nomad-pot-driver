@@ -54,7 +54,7 @@ var (
 		"image":           hclspec.NewAttr("image", "string", true),
 		"pot":             hclspec.NewAttr("pot", "string", true),
 		"tag":             hclspec.NewAttr("tag", "string", true),
-		"command":         hclspec.NewAttr("command", "string", true),
+		"command":         hclspec.NewAttr("command", "string", false),
 		"args":            hclspec.NewAttr("args", "list(string)", false),
 		"port_map":        hclspec.NewAttr("port_map", "list(map(string))", false),
 		"network_mode":    hclspec.NewAttr("network_mode", "string", false),
@@ -281,7 +281,10 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		return fmt.Errorf("failed to decode driver config in RESTORETASK: %v", err)
 	}*/
 
-	se := prepareContainer(handle.Config, driverConfig)
+	se, err := prepareContainer(handle.Config, driverConfig)
+	if err != nil {
+		return err
+	}
 	se.logger = d.logger
 
 	alive := se.checkContainerAlive(handle.Config)
@@ -368,7 +371,10 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	handle := drivers.NewTaskHandle(taskHandleVersion)
 	handle.Config = cfg
 
-	se := prepareContainer(cfg, driverConfig)
+	se, err := prepareContainer(cfg, driverConfig)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	se.logger = d.logger
 	alive := se.checkContainerAlive(cfg)
