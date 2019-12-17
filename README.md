@@ -102,7 +102,9 @@ The pot task driver supports the following parameters:
 
 * `tag` - Version of the image.
  
-* `commad` - Command that is going to be executed once the jail is started.
+* `commad` - Command that is going to be executed once the jail is started. (optional)
+
+* `args` - Array of arguments to append to the command. (Depends on command beeing set)
 
 * `network_mode` - (Optional) Defines the network mode of the pot. Default: **"public-bridge"**
 
