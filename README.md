@@ -39,9 +39,10 @@ job "example" {
 
       config {
         image = "https://pot-registry.zapto.org/registry/"
-        pot = "nginx-only"
-        tag = "1.0"
-        command = "nginx -g 'daemon off;'"
+        pot = "FBSD121-nginx"
+        tag = "1.2"
+        command = "nginx"
+        args = ["-g","'daemon off;'"]
         port_map = { 
           http = "80"
         }
@@ -73,9 +74,10 @@ task "nginx-pot" {
 
     config {
       image = "https://pot-registry.zapto.org/registry/"
-      pot = "FBSD120-nginx"
-      tag = "1.0"
-      command = "nginx -g 'daemon off;'"
+      pot = "FBSD121-nginx"
+      tag = "1.2"
+      command = "nginx"
+      args = ["-g","'daemon off;'"]
       network_mode = "public-bridge" 
       port_map = {
         http = "80"
@@ -102,9 +104,9 @@ The pot task driver supports the following parameters:
 
 * `tag` - Version of the image.
  
-* `commad` - Command that is going to be executed once the jail is started. (optional)
+* `commad` - (Optional) Command that is going to be executed once the jail is started.
 
-* `args` - Array of arguments to append to the command. (Depends on command beeing set)
+* `args` - (Optional. Depends on `commad`) Array of arguments to append to the command.
 
 * `network_mode` - (Optional) Defines the network mode of the pot. Default: **"public-bridge"**
 
