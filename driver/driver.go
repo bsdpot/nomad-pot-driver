@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	log "github.com/hashicorp/go-hclog"
+	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/drivers/shared/eventer"
 	"github.com/hashicorp/nomad/helper/pluginutils/hclutils"
 	"github.com/hashicorp/nomad/plugins/base"
@@ -97,7 +97,7 @@ type Driver struct {
 	signalShutdown context.CancelFunc
 
 	// logger will log to the Nomad agent
-	logger log.Logger
+	logger hclog.Logger
 }
 
 // Config is the driver configuration set by the SetConfig RPC call
@@ -145,7 +145,7 @@ type TaskState struct {
 }
 
 // NewPotDriver returns a new DriverPlugin implementation
-func NewPotDriver(logger log.Logger) drivers.DriverPlugin {
+func NewPotDriver(logger hclog.Logger) drivers.DriverPlugin {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger = logger.Named(pluginName)
 
@@ -384,20 +384,29 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		if exists == 0 {
 			if err := se.createContainer(cfg); err != nil {
 				//Destroy container if err on creation
-				se.destroyContainer(cfg)
+				err := se.destroyContainer(cfg)
+				if err != nil {
+					d.logger.Error("Error destroying container with err: ", err)
+				}
 				return nil, nil, fmt.Errorf("unable to create container: %v", err)
 			}
 			d.logger.Trace("StartTask", "Created container, se:", se)
 
 			if err := se.startContainer(cfg); err != nil {
-				se.destroyContainer(cfg)
+				err := se.destroyContainer(cfg)
+				if err != nil {
+					d.logger.Error("Error destroying container with err: ", err)
+				}
 				return nil, nil, fmt.Errorf("unable to start container: %v", err)
 			}
 			d.logger.Trace("StartTask", "Started task, se", se)
 		} else {
 			d.logger.Trace("StartTask", "Container existed, se", se)
 			if err := se.startContainer(cfg); err != nil {
-				se.destroyContainer(cfg)
+				err := se.destroyContainer(cfg)
+				if err != nil {
+					d.logger.Error("Error destroying container with err: ", err)
+				}
 				return nil, nil, fmt.Errorf("unable to start container: %v", err)
 			}
 		}
