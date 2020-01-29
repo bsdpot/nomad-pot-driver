@@ -287,7 +287,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	_, err = exec.Command("sh", "-c", s.argvEnv).Output()
 	if err != nil {
 		message := "Error setting env variables for pot with err: " + err.Error()
-		s.logger.Error(message)
+		return errors.New(string(message))
 	}
 
 	// Set hosts file inside the pot
@@ -297,7 +297,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	_, err = exec.Command("sh", "-c", s.argvExtraHosts).Output()
 	if err != nil {
 		message := "Error setting hosts file for pot with err: " + err.Error()
-		s.logger.Error(message)
+		return errors.New(string(message))
 	}
 
 	//Set memory limit for pot
@@ -307,7 +307,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	_, err = exec.Command("sh", "-c", s.argvMem).Output()
 	if err != nil {
 		message := "Error setting memory limit for pot with err: " + err.Error()
-		s.logger.Error(message)
+		return errors.New(string(message))
 	}
 
 	return nil

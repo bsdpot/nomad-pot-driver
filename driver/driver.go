@@ -384,20 +384,29 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		if exists == 0 {
 			if err := se.createContainer(cfg); err != nil {
 				//Destroy container if err on creation
-				se.destroyContainer(cfg)
+				err := se.destroyContainer(cfg)
+				if err != nil {
+					d.logger.Error("Error destroying container with err: ", err)
+				}
 				return nil, nil, fmt.Errorf("unable to create container: %v", err)
 			}
 			d.logger.Trace("StartTask", "Created container, se:", se)
 
 			if err := se.startContainer(cfg); err != nil {
-				se.destroyContainer(cfg)
+				err := se.destroyContainer(cfg)
+				if err != nil {
+					d.logger.Error("Error destroying container with err: ", err)
+				}
 				return nil, nil, fmt.Errorf("unable to start container: %v", err)
 			}
 			d.logger.Trace("StartTask", "Started task, se", se)
 		} else {
 			d.logger.Trace("StartTask", "Container existed, se", se)
 			if err := se.startContainer(cfg); err != nil {
-				se.destroyContainer(cfg)
+				err := se.destroyContainer(cfg)
+				if err != nil {
+					d.logger.Error("Error destroying container with err: ", err)
+				}
 				return nil, nil, fmt.Errorf("unable to start container: %v", err)
 			}
 		}
