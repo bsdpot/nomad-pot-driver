@@ -25,7 +25,7 @@ jobs:
         fi
 
     - name: FreeBSD Build
-      run: GOOS=freebsd go build -v -o nomad-pot-driver .
+      run: GOFLAGS=-mod=vendor GOOS=freebsd go build -v -o nomad-pot-driver .
 
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
