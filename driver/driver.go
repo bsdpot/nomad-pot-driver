@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	hclog "github.com/hashicorp/go-hclog"
+	log "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/drivers/shared/eventer"
 	"github.com/hashicorp/nomad/helper/pluginutils/hclutils"
 	"github.com/hashicorp/nomad/plugins/base"
@@ -97,7 +97,7 @@ type Driver struct {
 	signalShutdown context.CancelFunc
 
 	// logger will log to the Nomad agent
-	logger hclog.Logger
+	logger log.Logger
 }
 
 // Config is the driver configuration set by the SetConfig RPC call
@@ -145,7 +145,7 @@ type TaskState struct {
 }
 
 // NewPotDriver returns a new DriverPlugin implementation
-func NewPotDriver(logger hclog.Logger) drivers.DriverPlugin {
+func NewPotDriver(logger log.Logger) drivers.DriverPlugin {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger = logger.Named(pluginName)
 
