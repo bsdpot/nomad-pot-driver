@@ -182,7 +182,7 @@ func (s *syexec) destroyContainer(commandCfg *drivers.TaskConfig) error {
 }
 
 func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
-	s.logger.Info("launching createContainer command", "log", strings.Join(s.argvCreate, " "))
+	s.logger.Debug("launching createContainer command", "log", strings.Join(s.argvCreate, " "))
 
 	cmd := exec.Command(potBIN, s.argvCreate...)
 
@@ -369,9 +369,10 @@ func (s *syexec) checkContainerAlive(commandCfg *drivers.TaskConfig) int {
 	s.logger.Trace("Allocation name beeing check for liveness", "alive", potName)
 
 	psCommand := "/bin/sh /usr/local/bin/pot start " + potName
-	pidCommand := "pgrep -f '" + psCommand + "'"
-	s.logger.Trace("Command to execute", "alive", pidCommand)
+	pidCommand := "/bin/pgrep -f '" + psCommand + "'"
+	s.logger.Debug("Command to execute", "alive", pidCommand)
 	output, err := exec.Command("sh", "-c", pidCommand).Output()
+	s.logger.Trace("Got output", "output:", string(output), "err: ", err)
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			ws := exitError.Sys().(syscall.WaitStatus)
