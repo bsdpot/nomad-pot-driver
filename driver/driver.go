@@ -289,10 +289,8 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 
 	alive := se.checkContainerAlive(handle.Config)
 	if alive == 0 {
-		if err := se.startContainer(taskState.TaskConfig); err != nil {
-			se.destroyContainer(handle.Config)
-			return fmt.Errorf("unable to start container: %v", err)
-		}
+		d.tasks.Delete(handle.Config.ID)
+		return fmt.Errorf("unable to recover a container that is not running")
 	} else {
 		se.containerPid = alive
 		completeName := handle.Config.JobName + handle.Config.Name + "_" + handle.Config.AllocID
@@ -304,9 +302,10 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		if err != nil {
 			d.logger.Error("Error setting stderr with", "err", err)
 		}
+		directory := handle.Config.TaskDir().SharedTaskDir
 		se.cmd = &exec.Cmd{
 			Args: []string{"/usr/local/bin/pot", "start", completeName},
-			Dir:  handle.Config.AllocDir,
+			Dir:  directory,
 			Path: potBIN,
 			Process: &os.Process{
 				Pid: alive,
@@ -354,6 +353,11 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 	d.logger.Trace("RECOVER TASK", "h", h)
 	if alive == 0 {
 		go h.run()
+	} else {
+		h.procState = drivers.TaskStateRunning
+		h.exitResult.ExitCode = h.syexec.exitCode
+		h.exitResult.Signal = 0
+		h.completedAt = time.Now()
 	}
 
 	go d.recoverWait(handle.Config.ID, se)
@@ -369,6 +373,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	d.logger.Trace("###########################################################################################################################################")
 	d.logger.Trace("########################################################STARTTASK##########################################################################")
 	d.logger.Trace("###########################################################################################################################################")
+
 	if _, ok := d.tasks.Get(cfg.ID); ok {
 		return nil, nil, fmt.Errorf("task with ID %q already started", cfg.ID)
 	}
@@ -389,6 +394,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	}
 
 	se.logger = d.logger
+	//se.logger.Info("Checking container alive from StartTask")
 	alive := se.checkContainerAlive(cfg)
 	if alive == 0 {
 		d.logger.Trace("StartTask", "Container not alive", alive)
@@ -476,14 +482,24 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 }
 
 func (d *Driver) recoverWait(id string, se syexec) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+OuterLoop:
 	for {
-		time.Sleep(1 * time.Second)
-		code := se.checkContainerAlive(se.cfg)
-		if code == 0 {
-			d.logger.Error("Cotainer", "RecoverWait Break", se.cfg.JobName)
-			break
+		select {
+		case <-d.ctx.Done():
+			break OuterLoop
+		case <-ticker.C:
+			//d.logger.Info("Checking containerAlive from Ticker recoverWait")
+			code := se.checkContainerAlive(se.cfg)
+			if code == 0 {
+				d.logger.Error("Container", "RecoverWait Break", se.cfg.JobName)
+				break OuterLoop
+			}
 		}
 	}
+
 	handle, _ := d.tasks.Get(id)
 	handle.procState = drivers.TaskStateExited
 }
@@ -492,7 +508,7 @@ func (d *Driver) potWait(taskID string, se syexec) {
 	handle, _ := d.tasks.Get(taskID)
 	err := se.cmd.Wait()
 	if err != nil {
-		d.logger.Error("Error exiting se.cmd.Wait in potWait")
+		d.logger.Error("Error exiting se.cmd.Wait in potWait", "Err", err)
 	}
 	handle.procState = drivers.TaskStateExited
 
