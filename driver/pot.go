@@ -182,7 +182,7 @@ func (s *syexec) destroyContainer(commandCfg *drivers.TaskConfig) error {
 }
 
 func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
-	s.logger.Info("launching createContainer command", "log", strings.Join(s.argvCreate, " "))
+	s.logger.Debug("launching createContainer command", "log", strings.Join(s.argvCreate, " "))
 
 	cmd := exec.Command(potBIN, s.argvCreate...)
 
@@ -232,7 +232,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					ws := exitError.Sys().(syscall.WaitStatus)
-					s.logger.Error("ExitError ", ws.ExitStatus())
+					s.logger.Error("ExitError copying files", "exitStatus ", ws.ExitStatus())
 					return errors.New(string(output))
 				}
 				s.logger.Error("Could not get exit code for copy command ", "pot", command)
@@ -252,7 +252,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					ws := exitError.Sys().(syscall.WaitStatus)
-					s.logger.Error("ExitError ", ws.ExitStatus())
+					s.logger.Error("ExitError Mounting Files", "exitStatus", ws.ExitStatus())
 					return errors.New(string(output))
 				}
 				s.logger.Error("Could not get exit code for mount command ", "pot", command)
@@ -271,7 +271,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					ws := exitError.Sys().(syscall.WaitStatus)
-					s.logger.Error("ExitError ", ws.ExitStatus())
+					s.logger.Error("ExitError Mounting r-only files", "exitStatus", ws.ExitStatus())
 					return errors.New(string(output))
 				}
 				s.logger.Error("Could not get exit code for mounting read only container ", "pot", command)
@@ -369,13 +369,14 @@ func (s *syexec) checkContainerAlive(commandCfg *drivers.TaskConfig) int {
 	s.logger.Trace("Allocation name beeing check for liveness", "alive", potName)
 
 	psCommand := "/bin/sh /usr/local/bin/pot start " + potName
-	pidCommand := "pgrep -f '" + psCommand + "'"
+	pidCommand := "/bin/pgrep -f '" + psCommand + "'"
 	s.logger.Trace("Command to execute", "alive", pidCommand)
 	output, err := exec.Command("sh", "-c", pidCommand).Output()
+	s.logger.Trace("Got output", "output:", string(output), "err: ", err)
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			ws := exitError.Sys().(syscall.WaitStatus)
-			s.logger.Error("ExitError ", ws.ExitStatus())
+			s.logger.Error("ExitError checkContainerAlive", "exitStatus", ws.ExitStatus())
 			return 0
 		}
 		s.logger.Error("Could not get exit code for ps command ", "pot", err)
@@ -405,7 +406,7 @@ func (s *syexec) checkContainerExists(commandCfg *drivers.TaskConfig) int {
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			ws := exitError.Sys().(syscall.WaitStatus)
-			s.logger.Error("ExitError ", ws.ExitStatus())
+			s.logger.Error("ExitError CheckContainerExists", "exitError", ws.ExitStatus())
 			return 0
 		}
 		s.logger.Error("Could not get exit code for ps command ", "pot", err)
