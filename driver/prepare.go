@@ -44,8 +44,15 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 		taskCfg.Command = "\"" + taskCfg.Command + "\""
 		argv = append(argv, "-c", taskCfg.Command)
 	}
-	if taskCfg.NetworkMode != "" {
+
+	if taskCfg.NetworkMode != "" && taskCfg.NetworkMode != "alias" && taskCfg.NetworkMode != "host" {
 		argv = append(argv, "-N", taskCfg.NetworkMode)
+	} else if taskCfg.NetworkMode == "alias" {
+		if taskCfg.IP == "" {
+			err := errors.New("ip can not be empty if network_mode is set to alias")
+			return se, err
+		}
+		argv = append(argv, "-N", "alias", "-i", taskCfg.IP)
 	} else if len(taskCfg.PortMap) > 0 {
 		argv = append(argv, "-N", "public-bridge", "-i", "auto")
 	}

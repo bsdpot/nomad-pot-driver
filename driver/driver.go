@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	hclog "github.com/hashicorp/go-hclog"
@@ -58,6 +59,7 @@ var (
 		"args":            hclspec.NewAttr("args", "list(string)", false),
 		"port_map":        hclspec.NewAttr("port_map", "list(map(string))", false),
 		"network_mode":    hclspec.NewAttr("network_mode", "string", false),
+		"ip":              hclspec.NewAttr("ip", "string", false),
 		"mount":           hclspec.NewAttr("mount", "list(string)", false),
 		"copy":            hclspec.NewAttr("copy", "list(string)", false),
 		"mount_read_only": hclspec.NewAttr("mount_read_only", "list(string)", false),
@@ -123,6 +125,7 @@ type TaskConfig struct {
 
 	//Network Mode
 	NetworkMode string `codec:"network_mode"`
+	IP          string `codec:"ip"`
 
 	// Enable debug-verbose global options
 	Debug   bool `codec:"debug"`
@@ -458,6 +461,24 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		StartedAt:     h.startedAt,
 	}
 
+	var networkConfig drivers.DriverNetwork
+	if driverConfig.IP != "" {
+		networkConfig.IP = driverConfig.IP
+		networkConfig.AutoAdvertise = true
+
+		ports := make(map[string]int)
+		for name, port := range driverConfig.PortMap {
+			portString, err := strconv.Atoi(port)
+			if err != nil {
+				fmt.Println("Error converting port string to int")
+				return nil, nil, err
+			}
+			ports[name] = portString
+		}
+
+		networkConfig.PortMap = ports
+	}
+
 	d.logger.Trace("START TASK", "taskState", driverState)
 
 	if err := handle.SetDriverState(&driverState); err != nil {
@@ -478,7 +499,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	d.logger.Trace("###########################################################################################################################################")
 	d.logger.Trace("########################################################/STARTTASK#########################################################################")
 	d.logger.Trace("###########################################################################################################################################")
-	return handle, nil, nil
+	return handle, &networkConfig, nil
 }
 
 func (d *Driver) recoverWait(id string, se syexec) {
