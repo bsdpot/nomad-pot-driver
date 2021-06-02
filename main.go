@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/nomad/plugins"
 
-	pot "github.com/subito/nomad-pot-driver/driver"
+	pot "github.com/trivago/nomad-pot-driver/driver"
 )
 
 func main() {
