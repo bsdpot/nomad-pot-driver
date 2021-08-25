@@ -2,23 +2,28 @@ package pot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"time"
 
-	hclog "github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/drivers/shared/eventer"
 	"github.com/hashicorp/nomad/helper/pluginutils/hclutils"
 	"github.com/hashicorp/nomad/plugins/base"
 	"github.com/hashicorp/nomad/plugins/drivers"
 	"github.com/hashicorp/nomad/plugins/shared/hclspec"
-	pstructs "github.com/hashicorp/nomad/plugins/shared/structs"
+	"github.com/hashicorp/nomad/plugins/shared/structs"
 )
 
 const (
 	// pluginName is the name of the plugin
 	pluginName = "pot"
+
+	// pluginVersion allows the client to identify and use newer versions of
+	// an installed plugin
+	pluginVersion = "v0.2.0"
 
 	// fingerprintPeriod is the interval at which the driver will send fingerprint responses
 	fingerprintPeriod = 30 * time.Second
@@ -35,8 +40,8 @@ var (
 	// pluginInfo is the response returned for the PluginInfo RPC
 	pluginInfo = &base.PluginInfoResponse{
 		Type:              base.PluginTypeDriver,
-		PluginApiVersions: []string{"0.1.0"},
-		PluginVersion:     "0.0.1",
+		PluginApiVersions: []string{drivers.ApiVersion010},
+		PluginVersion:     pluginVersion,
 		Name:              pluginName,
 	}
 
@@ -138,10 +143,11 @@ type TaskConfig struct {
 // StartTask. This information is needed to rebuild the task state and handler
 // during recovery.
 type TaskState struct {
-	TaskConfig    *drivers.TaskConfig
-	ContainerName string
-	StartedAt     time.Time
-	PID           int
+	ReattachConfig *structs.ReattachConfig
+	TaskConfig     *drivers.TaskConfig
+	StartedAt      time.Time
+	ContainerName  string
+	PID            int
 }
 
 // NewPotDriver returns a new DriverPlugin implementation
@@ -226,27 +232,23 @@ func (d *Driver) handleFingerprint(ctx context.Context, ch chan<- *drivers.Finge
 }
 
 func (d *Driver) buildFingerprint() *drivers.Fingerprint {
-	var health drivers.HealthState
-	var desc string
-	attrs := map[string]*pstructs.Attribute{}
+	fp := &drivers.Fingerprint{
+		Attributes:        map[string]*structs.Attribute{},
+		Health:            drivers.HealthStateHealthy,
+		HealthDescription: drivers.DriverHealthy,
+	}
 
-	potVersion := "pot0.1.0"
-
-	if d.config.Enabled && potVersion != "" {
-		health = drivers.HealthStateHealthy
-		desc = "healthy"
-		attrs["driver.pot"] = pstructs.NewBoolAttribute(true)
-		attrs["driver.pot.version"] = pstructs.NewStringAttribute(potVersion)
+	if d.config.Enabled && pluginVersion != "" {
+		fp.Health = drivers.HealthStateHealthy
+		fp.HealthDescription = "healthy"
+		fp.Attributes["driver.pot"] = structs.NewBoolAttribute(true)
+		fp.Attributes["driver.pot.version"] = structs.NewStringAttribute(pluginVersion)
 	} else {
-		health = drivers.HealthStateUndetected
-		desc = "disabled"
+		fp.Health = drivers.HealthStateUndetected
+		fp.HealthDescription = "disabled"
 	}
 
-	return &drivers.Fingerprint{
-		Attributes:        attrs,
-		Health:            health,
-		HealthDescription: desc,
-	}
+	return fp
 }
 
 // RecoverTask try to recover a failed task, if not return error
@@ -256,7 +258,7 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 	d.logger.Trace("###########################################################################################################################################")
 	d.logger.Trace("RECOVER TASK", "ID", handle.Config.ID)
 	if handle == nil {
-		return fmt.Errorf("error: handle cannot be nil")
+		return errors.New("error: handle cannot be nil")
 	}
 
 	if taskhandle, ok := d.tasks.Get(handle.Config.ID); ok {
@@ -385,6 +387,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 
 	d.logger.Trace("StartTask", "driverConfig", driverConfig)
 
+	d.logger.Info("starting task", "driver_cfg", hclog.Fmt("%+v", driverConfig))
 	handle := drivers.NewTaskHandle(taskHandleVersion)
 	handle.Config = cfg
 
@@ -591,7 +594,7 @@ func (d *Driver) DestroyTask(taskID string, force bool) error {
 	}
 
 	if handle.IsRunning() && !force {
-		return fmt.Errorf("cannot destroy running task")
+		return errors.New("cannot destroy running task")
 	}
 
 	d.tasks.Delete(taskID)
@@ -630,5 +633,5 @@ func (d *Driver) SignalTask(taskID string, signal string) error {
 
 // ExecTask calls a exec cmd over a running task
 func (d *Driver) ExecTask(taskID string, cmd []string, timeout time.Duration) (*drivers.ExecTaskResult, error) {
-	return nil, fmt.Errorf("POT driver does not support exec") //TODO
+	return nil, errors.New("POT driver does not support exec") //TODO
 }
