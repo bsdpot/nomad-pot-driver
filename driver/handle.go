@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	hclog "github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/plugins/drivers"
 )
 
@@ -46,7 +46,6 @@ func (h *taskHandle) TaskStatus() *drivers.TaskStatus {
 func (h *taskHandle) IsRunning() bool {
 	h.stateLock.RLock()
 	defer h.stateLock.RUnlock()
-
 	return h.procState == drivers.TaskStateRunning
 }
 
