@@ -52,8 +52,8 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 
 	if taskCfg.NetworkMode != "host" {
 		for name, port := range taskCfg.PortMap {
-			_, portInt := cfg.Resources.NomadResources.Networks.Port(name)
-			sPort := strconv.Itoa(portInt)
+			envname := "NOMAD_HOST_PORT_" + name
+			sPort := cfg.Env[envname]
 			completePort := port + ":" + sPort
 			argv = append(argv, "-e", completePort)
 		}
