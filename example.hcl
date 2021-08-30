@@ -3,7 +3,11 @@ job "example" {
   type        = "service"
 
   group "group1" {
-    count = 1 
+    count = 1
+            
+    network {
+      port "http" {}
+    } 
 
     task "task1" {
       driver = "pot"
@@ -39,11 +43,6 @@ job "example" {
       resources {
         cpu = 200
         memory = 128
-        
-        network {
-          mbits = 10
-          port "http" {}
-        }
       }
     }
   }
