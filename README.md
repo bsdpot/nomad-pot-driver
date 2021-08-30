@@ -18,7 +18,11 @@ job "example" {
   type        = "service"
 
   group "group1" {
-    count = 1 
+    count = 1
+    
+    network {
+      port "http" {}
+    } 
 
     task "task1" {
       driver = "pot"
@@ -55,11 +59,6 @@ job "example" {
       resources {
         cpu = 200
         memory = 128
-        
-        network {
-          mbits = 10
-          port "http" {}
-        }
       }
     }
   }
@@ -140,7 +139,7 @@ nomad_user="root"
 nomad_env="PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/sbin:/bin"
 ```
 
-[pot-task-driver]: https://github.com/trivago/pot-task-driver
+[pot-task-driver]: https://github.com/trivago/nomad-pot-driver
 [plugin_dir]: /docs/configuration/index.html#plugin_dir
 [pot-github-repo]: https://github.com/pizzamig/pot
 [pot-install-guide]: https://github.com/pizzamig/pot/blob/master/share/doc/pot/Installation.md
