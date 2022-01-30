@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -295,7 +297,8 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		return fmt.Errorf("unable to recover a container that is not running")
 	} else {
 		se.containerPid = alive
-		completeName := handle.Config.JobName + handle.Config.Name + "_" + handle.Config.AllocID
+		parts := strings.Split(handle.Config.ID, "/")
+		completeName := parts[1] + "_" + parts[2] + "_" + parts[0]
 		Sout, err := se.Stdout()
 		if err != nil {
 			d.logger.Error("Error setting stdout with", "err", err)
@@ -433,7 +436,8 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		}
 	} else {
 		se.containerPid = alive
-		completeName := cfg.JobName + cfg.Name + "_" + cfg.AllocID
+		parts := strings.Split(cfg.ID, "/")
+		completeName := parts[1] + "_" + parts[2] + "_" + parts[0]
 
 		se.cmd = &exec.Cmd{
 			Args: []string{"/usr/local/bin/pot", "start", completeName},
@@ -505,16 +509,45 @@ OuterLoop:
 
 	handle, _ := d.tasks.Get(id)
 	handle.procState = drivers.TaskStateExited
+
+	last_run, err := se.getContainerLastRunStats(handle.taskConfig)
+	if err != nil {
+		d.logger.Error("Error getting container last-run-stats with err: ", err)
+		handle.exitResult.ExitCode = defaultFailedCode
+	} else {
+		handle.exitResult.ExitCode = last_run.ExitCode
+	}
+
+	err = se.destroyContainer(handle.taskConfig)
+	if err != nil {
+		d.logger.Error("Error destroying container with err: ", err)
+	}
 }
 
 func (d *Driver) potWait(taskID string, se syexec) {
 	handle, _ := d.tasks.Get(taskID)
 	err := se.cmd.Wait()
+	handle.procState = drivers.TaskStateExited
 	if err != nil {
 		d.logger.Error("Error exiting se.cmd.Wait in potWait", "Err", err)
+		handle.exitResult.ExitCode = defaultFailedCode
+		if exitError, ok := err.(*exec.ExitError); ok {
+			ws := exitError.Sys().(syscall.WaitStatus)
+			if ws.ExitStatus() == 125 { // enclosed process exited with error
+				last_run_stats, err := se.getContainerLastRunStats(handle.taskConfig)
+				if err != nil {
+					d.logger.Error("Error getting container last-run-stats with err: ", err)
+				} else {
+					handle.exitResult.ExitCode = last_run_stats.ExitCode
+				}
+			}
+		}
 	}
-	handle.procState = drivers.TaskStateExited
 
+	err = se.destroyContainer(handle.taskConfig)
+	if err != nil {
+		d.logger.Error("Error destroying container with err: ", err)
+	}
 }
 
 // WaitTask waits for task completion
