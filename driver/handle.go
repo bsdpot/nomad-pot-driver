@@ -61,6 +61,7 @@ func (h *taskHandle) run() {
 
 	if h.syexec.ExitError != nil {
 		h.exitResult.Err = h.syexec.ExitError
+		h.exitResult.ExitCode = h.syexec.exitCode
 		h.procState = drivers.TaskStateUnknown
 		h.completedAt = time.Now()
 		return

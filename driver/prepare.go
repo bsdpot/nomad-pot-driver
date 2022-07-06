@@ -24,10 +24,6 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 
 	argv = append(argv, "prepare", "-U", taskCfg.Image, "-p", taskCfg.Pot, "-t", taskCfg.Tag)
 
-	if cfg.AllocID != "" {
-		argv = append(argv, "-a", cfg.AllocID)
-	}
-
 	if len(taskCfg.Args) > 0 {
 		if taskCfg.Command == "" {
 			err := errors.New("command can not be empty if arguments are provided")
@@ -59,12 +55,17 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 		}
 	}
 
-	completeName := cfg.JobName + cfg.Name
-	argv = append(argv, "-n", completeName, "-v")
+	parts := strings.Split(cfg.ID, "/")
+	baseName := parts[1]
+	jobIDAllocID := parts[2] + "_" + parts[0]
+	if jobIDAllocID != "" {
+		argv = append(argv, "-a", jobIDAllocID)
+	}
+	argv = append(argv, "-n", baseName, "-v")
 
 	se.argvCreate = argv
 
-	potName := completeName + "_" + cfg.AllocID
+	potName := baseName + "_" + jobIDAllocID
 
 	//Mount local
 	commandLocal := "mount-in -p " + potName + " -d " + cfg.TaskDir().LocalDir + " -m /local"
@@ -140,13 +141,17 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 	argvStop = append(argvStop, "stop", potName)
 	se.argvStop = argvStop
 
-	argvDestroy := make([]string, 0, 50)
-	argvDestroy = append(argvDestroy, "destroy", "-p", potName)
-	se.argvDestroy = argvDestroy
-
 	argvStats := make([]string, 0, 50)
 	argvStats = append(argvStats, "get-rss", "-p", potName, "-J")
 	se.argvStats = argvStats
+
+	argvLastRunStats := make([]string, 0, 50)
+	argvLastRunStats = append(argvLastRunStats, "last-run-stats", "-p", potName)
+	se.argvLastRunStats = argvLastRunStats
+
+	argvDestroy := make([]string, 0, 50)
+	argvDestroy = append(argvDestroy, "destroy", "-p", potName)
+	se.argvDestroy = argvDestroy
 
 	return se, nil
 }
@@ -209,7 +214,8 @@ func prepareStop(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 
 	argv = append(argv, "stop")
 
-	completeName := cfg.JobName + cfg.Name + "_" + cfg.AllocID
+	parts := strings.Split(cfg.ID, "/")
+	completeName := parts[1] + "_" + parts[2] + "_" + parts[0]
 
 	argv = append(argv, completeName)
 
@@ -229,7 +235,8 @@ func prepareDestroy(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 
 	argv = append(argv, "destroy")
 
-	completeName := cfg.JobName + cfg.Name + "_" + cfg.AllocID
+	parts := strings.Split(cfg.ID, "/")
+	completeName := parts[1] + "_" + parts[2] + "_" + parts[0]
 
 	argv = append(argv, "-p", completeName)
 

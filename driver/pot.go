@@ -31,6 +31,7 @@ type syexec struct {
 	argvStart         []string
 	argvStop          []string
 	argvStats         []string
+	argvLastRunStats  []string
 	argvDestroy       []string
 	cmd               *exec.Cmd
 	cachedir          string
@@ -65,6 +66,10 @@ type potStats struct {
 			OldTotalTicks int
 		} `json:"CpuStats"`
 	} `json:"ResourceUsage"`
+}
+
+type lastRunStats struct {
+	ExitCode int `json:"ExitCode"`
 }
 
 var potStatistics map[string]potStats
@@ -364,8 +369,8 @@ func (s *syexec) containerStats(commandCfg *drivers.TaskConfig) (stats potStats,
 
 func (s *syexec) checkContainerAlive(commandCfg *drivers.TaskConfig) int {
 	s.logger.Trace("Checking if pot is alive", "Checking")
-	completeName := commandCfg.JobName + commandCfg.Name
-	potName := completeName + "_" + commandCfg.AllocID
+	parts := strings.Split(commandCfg.ID, "/")
+	potName := parts[1] + "_" + parts[2] + "_" + parts[0]
 	s.logger.Trace("Allocation name beeing check for liveness", "alive", potName)
 
 	psCommand := "/bin/sh /usr/local/bin/pot start " + potName
@@ -395,8 +400,8 @@ func (s *syexec) checkContainerAlive(commandCfg *drivers.TaskConfig) int {
 
 func (s *syexec) checkContainerExists(commandCfg *drivers.TaskConfig) int {
 	s.logger.Debug("Checking if pot is alive")
-	completeName := commandCfg.JobName + commandCfg.Name
-	potName := completeName + "_" + commandCfg.AllocID
+	parts := strings.Split(commandCfg.ID, "/")
+	potName := parts[1] + "_" + parts[2] + "_" + parts[0]
 	s.logger.Trace("Allocation name beeing check for liveness", "alive", potName)
 
 	pidCommand := "/usr/local/bin/pot ls -q | grep " + potName
@@ -419,4 +424,54 @@ func (s *syexec) checkContainerExists(commandCfg *drivers.TaskConfig) int {
 	}
 
 	return 0
+}
+
+func (s *syexec) getContainerLastRunStats(commandCfg *drivers.TaskConfig) (stats lastRunStats, err error) {
+	s.logger.Debug("launching LastRunStatsContainer command", strings.Join(s.argvLastRunStats, " "))
+
+	cmd := exec.Command(potBIN, s.argvLastRunStats...)
+
+	// set the task dir as the working directory for the command
+	cmd.Dir = commandCfg.TaskDir().Dir
+	cmd.Path = potBIN
+	cmd.Args = append([]string{cmd.Path}, s.argvLastRunStats...)
+
+	var outb, errb bytes.Buffer
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+
+	// Start the process
+	if err := cmd.Run(); err != nil {
+		// try to get the exit code
+		if exitError, ok := err.(*exec.ExitError); ok {
+			ws := exitError.Sys().(syscall.WaitStatus)
+			s.exitCode = ws.ExitStatus()
+		} else {
+			s.logger.Error("Could not get exit code for container last-run-stats ", "pot", s.argvLastRunStats)
+			s.exitCode = defaultFailedCode
+		}
+	} else {
+		// success, exitCode should be 0 if go is ok
+		ws := cmd.ProcessState.Sys().(syscall.WaitStatus)
+		s.exitCode = ws.ExitStatus()
+	}
+
+	s.cmd = cmd
+
+	s.state = &psState{Pid: s.cmd.Process.Pid, ExitCode: s.exitCode, Time: time.Now()}
+
+	var lastRunStats lastRunStats
+
+	if s.exitCode != 0 {
+		err = errors.New("Pot exit code different than 0")
+		return lastRunStats, err
+	}
+
+	err = json.Unmarshal([]byte(outb.String()), &lastRunStats)
+	if err != nil {
+		s.logger.Error("Error unmarshaling json with err: ", err)
+		return lastRunStats, err
+	}
+
+	return lastRunStats, nil
 }
