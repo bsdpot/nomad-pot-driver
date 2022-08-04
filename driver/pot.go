@@ -33,6 +33,7 @@ type syexec struct {
 	argvStats         []string
 	argvLastRunStats  []string
 	argvDestroy       []string
+	argvSignal        []string
 	cmd               *exec.Cmd
 	cachedir          string
 	taskConfig        TaskConfig
@@ -474,4 +475,36 @@ func (s *syexec) getContainerLastRunStats(commandCfg *drivers.TaskConfig) (stats
 	}
 
 	return lastRunStats, nil
+}
+
+func (s *syexec) signalContainer(commandCfg *drivers.TaskConfig) error {
+	s.logger.Debug("launching SignalContainer command", strings.Join(s.argvSignal, " "))
+
+	cmd := exec.Command(potBIN, s.argvSignal...)
+
+	// set the task dir as the working directory for the command
+	cmd.Dir = commandCfg.TaskDir().Dir
+	cmd.Path = potBIN
+	cmd.Args = append([]string{cmd.Path}, s.argvSignal...)
+
+	// Start the process
+	if err := cmd.Run(); err != nil {
+		// try to get the exit code
+		if exitError, ok := err.(*exec.ExitError); ok {
+			ws := exitError.Sys().(syscall.WaitStatus)
+			s.exitCode = ws.ExitStatus()
+		} else {
+			s.logger.Error("Could not get exit code for signalling container ", "pot", s.argvSignal)
+			s.exitCode = defaultFailedCode
+		}
+	} else {
+		// success, exitCode should be 0 if go is ok
+		ws := cmd.ProcessState.Sys().(syscall.WaitStatus)
+		s.exitCode = ws.ExitStatus()
+	}
+
+	s.cmd = cmd
+
+	s.state = &psState{Pid: s.cmd.Process.Pid, ExitCode: s.exitCode, Time: time.Now()}
+	return nil
 }

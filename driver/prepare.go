@@ -5,11 +5,25 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/consul-template/signals"
 	"github.com/hashicorp/nomad/client/lib/fifo"
 	"github.com/hashicorp/nomad/plugins/drivers"
+)
+
+func reverseSignalMap(m map[string]os.Signal) map[os.Signal]string {
+	n := make(map[os.Signal]string, len(m))
+	for k, v := range m {
+		n[v] = k
+	}
+	return n
+}
+
+var (
+	LookupSignal = reverseSignalMap(signals.SignalLookup)
 )
 
 // prepareContainer preloads the taskcnf into args to be passed to a execCmd
@@ -244,4 +258,33 @@ func prepareDestroy(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 
 	return se
 
+}
+
+func prepareSignal(cfg *drivers.TaskConfig, taskCfg TaskConfig, sig os.Signal) (syexec, error) {
+	argv := make([]string, 0, 50)
+	var se syexec
+	se.taskConfig = taskCfg
+	se.cfg = cfg
+	se.env = cfg.EnvList()
+
+	// action can be run/exec
+
+	argv = append(argv, "signal")
+	argv = append(argv, "-s")
+
+	if s, ok := LookupSignal[sig]; ok {
+		argv = append(argv, s)
+	} else { // this should not be possible
+		return se, fmt.Errorf("failed to translate signal %v to string", sig)
+	}
+
+	parts := strings.Split(cfg.ID, "/")
+	completeName := parts[1] + "_" + parts[2] + "_" + parts[0]
+
+	argv = append(argv, "-p")
+	argv = append(argv, completeName)
+
+	se.argvSignal = argv
+
+	return se, nil
 }

@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hashicorp/consul-template/signals"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/drivers/shared/eventer"
 	"github.com/hashicorp/nomad/helper/pluginutils/hclutils"
@@ -661,7 +662,37 @@ func (d *Driver) TaskEvents(ctx context.Context) (<-chan *drivers.TaskEvent, err
 
 // SignalTask send a specific signal to a taskID
 func (d *Driver) SignalTask(taskID string, signal string) error {
-	return fmt.Errorf("Pot driver does not support signals")
+	handle, ok := d.tasks.Get(taskID)
+	if !ok {
+		return drivers.ErrTaskNotFound
+	}
+
+	sig, err := signals.Parse(signal)
+	if err != nil {
+		return fmt.Errorf("failed to parse signal: %v", err)
+	}
+
+	var driverConfig TaskConfig
+
+	if err := handle.taskConfig.DecodeDriverConfig(&driverConfig); err != nil {
+		return fmt.Errorf("failed to decode driver config in SignalTask: %v", err)
+	}
+
+	se, err := prepareSignal(handle.taskConfig, driverConfig, sig)
+	if err != nil {
+		return fmt.Errorf("unable to run PrepareSignal: %v", err)
+	}
+	se.logger = d.logger
+
+	if err := se.signalContainer(handle.taskConfig); err != nil {
+		return fmt.Errorf("unable to run SignalContainer: %v", err)
+	}
+
+	if se.state.ExitCode != 0 {
+		return fmt.Errorf("SignalContainer returned error code %v", se.state.ExitCode)
+	}
+	
+	return nil
 }
 
 // ExecTask calls a exec cmd over a running task
