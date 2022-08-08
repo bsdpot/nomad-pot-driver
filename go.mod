@@ -8,12 +8,14 @@ require (
 	github.com/Sirupsen/logrus v0.0.0-00010101000000-000000000000 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/appc/spec v0.8.11 // indirect
+	github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e // indirect
 	github.com/checkpoint-restore/go-criu v0.0.0-20191125063657-fcdcd07065c5 // indirect
 	github.com/containerd/go-cni v0.0.0-20191121212822-60d125212faf // indirect
 	github.com/containernetworking/plugins v0.8.3 // indirect
 	github.com/coreos/go-iptables v0.4.3 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
+	github.com/creack/pty v1.1.18 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
 	github.com/docker/cli v0.0.0-20191202230238-13fb276442f5 // indirect
 	github.com/docker/docker v1.13.1 // indirect
@@ -42,6 +44,7 @@ require (
 	github.com/vbatts/tar-split v0.11.1 // indirect
 	github.com/zclconf/go-cty v1.1.1 // indirect
 	go4.org v0.0.0-20191010144846-132d2879e1e9 // indirect
+	golang.org/x/sys v0.0.0-20191115151921-52ab43148777 // indirect
 )
 
 // use lower-case sirupsen

@@ -288,3 +288,30 @@ func prepareSignal(cfg *drivers.TaskConfig, taskCfg TaskConfig, sig os.Signal) (
 
 	return se, nil
 }
+
+func prepareExec(cfg *drivers.TaskConfig, cmd[] string) (syexec, error) {
+	argv := make([]string, 0, 50)
+	var se syexec
+	se.cfg = cfg
+	se.env = cfg.EnvList()
+
+	// action can be run/exec
+
+	argv = append(argv, "exec")
+
+	if len(cmd) == 0 {
+		return se, fmt.Errorf("empty command passed to prepareExec")
+	}
+
+	parts := strings.Split(cfg.ID, "/")
+	completeName := parts[1] + "_" + parts[2] + "_" + parts[0]
+
+	argv = append(argv, "-p")
+	argv = append(argv, completeName)
+
+	argv = append(argv, cmd[:]...)
+
+	se.argvExec = argv
+
+	return se, nil
+}
