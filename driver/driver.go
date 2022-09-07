@@ -26,7 +26,7 @@ const (
 
 	// pluginVersion allows the client to identify and use newer versions of
 	// an installed plugin
-	pluginVersion = "v0.2.0"
+	pluginVersion = "v0.2.1"
 
 	// fingerprintPeriod is the interval at which the driver will send fingerprint responses
 	fingerprintPeriod = 30 * time.Second
@@ -691,11 +691,57 @@ func (d *Driver) SignalTask(taskID string, signal string) error {
 	if se.state.ExitCode != 0 {
 		return fmt.Errorf("SignalContainer returned error code %v", se.state.ExitCode)
 	}
-	
+
 	return nil
 }
 
+
 // ExecTask calls a exec cmd over a running task
 func (d *Driver) ExecTask(taskID string, cmd []string, timeout time.Duration) (*drivers.ExecTaskResult, error) {
-	return nil, errors.New("POT driver does not support exec") //TODO
+	handle, ok := d.tasks.Get(taskID)
+	if !ok {
+		return nil, drivers.ErrTaskNotFound
+	}
+
+	if len(cmd) == 0 {
+		return nil, fmt.Errorf("cmd is required, but was empty")
+	}
+
+	se, err := prepareExec(handle.taskConfig, cmd)
+	if err != nil {
+		return nil, fmt.Errorf("unable to run PrepareCommand: %v", err)
+	}
+	se.logger = d.logger
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	return se.execInContainer(ctx, handle.taskConfig)
+}
+
+
+var _ drivers.ExecTaskStreamingRawDriver = (*Driver)(nil)
+
+func (d *Driver) ExecTaskStreamingRaw(ctx context.Context,
+	taskID string,
+	command []string,
+	tty bool,
+	stream drivers.ExecTaskStream) error {
+
+	handle, ok := d.tasks.Get(taskID)
+	if !ok {
+		return drivers.ErrTaskNotFound
+	}
+
+	if len(command) == 0 {
+		return fmt.Errorf("command is required")
+	}
+
+	se, err := prepareExec(handle.taskConfig, command)
+	if err != nil {
+		return fmt.Errorf("unable to run PrepareCommand: %v", err)
+	}
+	se.logger = d.logger
+
+	return se.execStreaming(ctx, handle.taskConfig, tty, stream)
 }

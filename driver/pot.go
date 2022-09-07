@@ -2,15 +2,20 @@ package pot
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/armon/circbuf"
+	"github.com/creack/pty"
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/plugins/drivers"
 )
@@ -34,6 +39,7 @@ type syexec struct {
 	argvLastRunStats  []string
 	argvDestroy       []string
 	argvSignal        []string
+	argvExec          []string
 	cmd               *exec.Cmd
 	cachedir          string
 	taskConfig        TaskConfig
@@ -507,4 +513,105 @@ func (s *syexec) signalContainer(commandCfg *drivers.TaskConfig) error {
 
 	s.state = &psState{Pid: s.cmd.Process.Pid, ExitCode: s.exitCode, Time: time.Now()}
 	return nil
+}
+
+func (s *syexec) execInContainer(ctx context.Context, commandCfg *drivers.TaskConfig) (*drivers.ExecTaskResult, error) {
+	s.logger.Debug("running ExecInContainer command", strings.Join(s.argvExec, " "))
+
+	cmd := exec.Command(potBIN, s.argvExec...)
+
+	// set the task dir as the working directory for the command
+	cmd.Dir = commandCfg.TaskDir().Dir
+	cmd.Path = potBIN
+	cmd.Args = append([]string{cmd.Path}, s.argvExec...)
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+	defer stdin.Close()
+
+	execResult := &drivers.ExecTaskResult{ExitResult: &drivers.ExitResult{}}
+	stdout, _ := circbuf.NewBuffer(int64(drivers.CheckBufSize))
+	stderr, _ := circbuf.NewBuffer(int64(drivers.CheckBufSize))
+
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	if err := cmd.Start(); err != nil { //Use start, not run
+		return nil, err
+	}
+
+	err = cmd.Wait()
+	execResult.Stdout = stdout.Bytes()
+	execResult.Stderr = stderr.Bytes()
+
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			ws := exitError.Sys().(syscall.WaitStatus)
+			s.exitCode = ws.ExitStatus()
+		} else {
+			s.logger.Error("Could not get exit code from exec in container ", "pot", s.argvExec)
+			s.exitCode = defaultFailedCode
+		}
+	} else {
+		s.exitCode = 0
+	}
+
+	execResult.ExitResult.ExitCode = s.exitCode
+	s.logger.Debug(fmt.Sprintf("ExecInContainer command exit code %i", execResult.ExitResult.ExitCode))
+	s.logger.Debug(string(execResult.Stdout))
+	s.logger.Debug(string(execResult.Stderr))
+	return execResult, nil
+}
+
+
+func (s *syexec) execStreaming(ctx context.Context,
+	commandCfg *drivers.TaskConfig,
+	tty bool,
+	stream drivers.ExecTaskStream) error {
+
+	s.logger.Debug("running ExecStreaming", strings.Join(s.argvExec, " "))
+
+	cmd := exec.CommandContext(ctx, potBIN, s.argvExec[0:]...)
+
+	cmd.Dir = commandCfg.TaskDir().Dir
+	cmd.Path = potBIN
+	//cmd.Env = ?
+
+	execHelper := &execHelper{
+		logger: s.logger,
+
+		newTerminal: func() (func() (*os.File, error), *os.File, error) {
+			pty, tty, err := pty.Open()
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return func() (*os.File, error) { return pty, nil }, tty, err
+		},
+		setTTY: func(tty *os.File) error {
+			cmd.SysProcAttr = sessionCmdAttr(tty)
+
+			cmd.Stdin = tty
+			cmd.Stdout = tty
+			cmd.Stderr = tty
+			return nil
+		},
+		setIO: func(stdin io.Reader, stdout, stderr io.Writer) error {
+			cmd.Stdin = stdin
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			return nil
+		},
+		processStart: func() error {
+			return cmd.Start()
+		},
+		processWait: func() (*os.ProcessState, error) {
+			err := cmd.Wait()
+			return cmd.ProcessState, err
+		},
+	}
+
+	return execHelper.run(ctx, tty, stream)
 }
