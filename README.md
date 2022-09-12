@@ -9,56 +9,60 @@ Name: `pot-task-driver`
 The Pot task driver provides an interface for using [pot][pot-github-repo] for dynamically running applications inside a FreeBSD Jail.
 You can download the external pot-task-driver [here][pot-task-driver].
 
+This version of the driver requires pot 0.15.0 or greater.
+
 ## Complete job example
 
 ```hcl
 job "example" {
-  region = "global"
-  datacenters = ["dc1"]
+  datacenters = ["datacenter"]
   type        = "service"
 
   group "group1" {
     count = 1
 
-    network {
-      port "http" {}
-    }
-
-    task "task1" {
+    task "www1" {
       driver = "pot"
 
       service {
-        tags = ["pot-jail", "metrics"]
-        name = "pot-example"
+        tags = ["nginx", "www"]
+        name = "nginx-example-service"
         port = "http"
 
          check {
             type     = "tcp"
-            name     = "http"
-            interval = "5s"
-            timeout  = "2s"
+            name     = "tcp"
+            interval = "60s"
+            timeout  = "30s"
           }
       }
 
-
       config {
-        image = "https://pot-registry.zapto.org/registry/"
-        pot = "FBSD121-nginx"
-        tag = "1.2"
+        image = "https://potluck.honeyguide.net/nginx-nomad"
+        pot = "nginx-nomad-amd64-12_3"
+        tag = "1.1.6"
         command = "nginx"
         args = ["-g","'daemon off;'"]
+
+        copy = [
+          "/mnt/s3/web/nginx.conf:/usr/local/etc/nginx/nginx.conf",
+        ]
+        mount = [
+          "/mnt/s3/web/www:/mnt"
+        ]
         port_map = {
           http = "80"
         }
-        network_mode = "host"
-        copy = [ "/tmp/test.txt:/root/test.txt", "/tmp/test2.txt:/root/test2.txt" ]
-        mount = [ "/tmp/test:/root/test", "/tmp/test2:/root/test2" ]
-        mount_read_only = [ "/tmp/test2:/root/test2" ]
       }
 
       resources {
         cpu = 200
-        memory = 128
+        memory = 64
+
+        network {
+          mbits = 10
+          port "http" {}
+        }
       }
     }
   }
@@ -72,26 +76,22 @@ task "nginx-pot" {
     driver = "pot"
 
     config {
-      image = "https://pot-registry.zapto.org/registry/"
-      pot = "FBSD121-nginx"
-      tag = "1.2"
+      image = "https://potluck.honeyguide.net/nginx-nomad"
+      pot = "nginx-nomad-amd64-12_3"
+      tag = "1.1.6"
       command = "nginx"
       args = ["-g","'daemon off;'"]
-      network_mode = "public-bridge"
+
+      copy = [
+        "/mnt/s3/web/nginx.conf:/usr/local/etc/nginx/nginx.conf",
+      ]
+      mount = [
+        "/mnt/s3/web/www:/mnt"
+      ]
       port_map = {
         http = "80"
       }
-      copy = [
-        "/root/index.html:/usr/local/www/nginx-dist/index.html",
-        "/root/nginx.conf:/usr/local/etc/nginx/nginx.conf"
-      ]
-      mount = [
-        "/tmp/test:/root/test",
-      ]
-      mount_read_only = [
-        "/tmp/test2:/root/test2"
-      ]
-   }
+    }
 }
 ```
 
