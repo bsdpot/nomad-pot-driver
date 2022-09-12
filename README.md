@@ -130,7 +130,7 @@ The pot task driver supports the following parameters:
 * 64-bit FreeBSD 12.0-RELEASE host .
 * The FreeBSD's Nomad binary (available as a package).
 * The pot-task-driver binary placed in the [plugin_dir][plugin_dir] directory.
-* Installing [pot][pot-github-repo] and following the install [guide][pot-install-guide].
+* Installing [pot][pot-github-repo], version 0.15.0 or greater, and following the install [guide][pot-install-guide].
 * Webserver from where to serve the images. (simple file server)
 * Following lines need to be included in your rc.conf
 
