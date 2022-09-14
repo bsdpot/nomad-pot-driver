@@ -6,59 +6,63 @@
 
 Name: `pot-task-driver`
 
-The Pot task driver provides an interface for using [pot][pot-github-repo] for dynamically running applications inside a FreeBSD Jail. 
+The Pot task driver provides an interface for using [pot][pot-github-repo] for dynamically running applications inside a FreeBSD Jail.
 You can download the external pot-task-driver [here][pot-task-driver].
+
+This version of the driver requires pot 0.15.0 or greater.
 
 ## Complete job example
 
 ```hcl
 job "example" {
-  region = "global"
-  datacenters = ["dc1"]
+  datacenters = ["datacenter"]
   type        = "service"
 
   group "group1" {
     count = 1
-    
-    network {
-      port "http" {}
-    } 
 
-    task "task1" {
+    task "www1" {
       driver = "pot"
-      
+
       service {
-        tags = ["pot-jail", "metrics"]
-        name = "pot-example"
+        tags = ["nginx", "www"]
+        name = "nginx-example-service"
         port = "http"
-       
+
          check {
             type     = "tcp"
-            name     = "http"
-            interval = "5s"
-            timeout  = "2s"
+            name     = "tcp"
+            interval = "60s"
+            timeout  = "30s"
           }
       }
 
-
       config {
-        image = "https://pot-registry.zapto.org/registry/"
-        pot = "FBSD121-nginx"
-        tag = "1.2"
+        image = "https://potluck.honeyguide.net/nginx-nomad"
+        pot = "nginx-nomad-amd64-12_3"
+        tag = "1.1.6"
         command = "nginx"
         args = ["-g","'daemon off;'"]
-        port_map = { 
+
+        copy = [
+          "/mnt/s3/web/nginx.conf:/usr/local/etc/nginx/nginx.conf",
+        ]
+        mount = [
+          "/mnt/s3/web/www:/mnt"
+        ]
+        port_map = {
           http = "80"
         }
-        network_mode = "host"
-        copy = [ "/tmp/test.txt:/root/test.txt", "/tmp/test2.txt:/root/test2.txt" ]
-        mount = [ "/tmp/test:/root/test", "/tmp/test2:/root/test2" ]
-        mount_read_only = [ "/tmp/test2:/root/test2" ] 
       }
-      
+
       resources {
         cpu = 200
-        memory = 128
+        memory = 64
+
+        network {
+          mbits = 10
+          port "http" {}
+        }
       }
     }
   }
@@ -72,37 +76,33 @@ task "nginx-pot" {
     driver = "pot"
 
     config {
-      image = "https://pot-registry.zapto.org/registry/"
-      pot = "FBSD121-nginx"
-      tag = "1.2"
+      image = "https://potluck.honeyguide.net/nginx-nomad"
+      pot = "nginx-nomad-amd64-12_3"
+      tag = "1.1.6"
       command = "nginx"
       args = ["-g","'daemon off;'"]
-      network_mode = "public-bridge" 
+
+      copy = [
+        "/mnt/s3/web/nginx.conf:/usr/local/etc/nginx/nginx.conf",
+      ]
+      mount = [
+        "/mnt/s3/web/www:/mnt"
+      ]
       port_map = {
         http = "80"
       }
-      copy = [
-        "/root/index.html:/usr/local/www/nginx-dist/index.html",
-        "/root/nginx.conf:/usr/local/etc/nginx/nginx.conf"
-      ]
-      mount = [ 
-        "/tmp/test:/root/test",  
-      ]
-      mount_read_only = [
-        "/tmp/test2:/root/test2"
-      ]
-   }
+    }
 }
 ```
 
-The pot task driver supports the following parameters: 
+The pot task driver supports the following parameters:
 
 * `image` - The url for the http registry from where to get the image.
 
 * `pot` - Name of the image in the registry.
 
 * `tag` - Version of the image.
- 
+
 * `commad` - (Optional) Command that is going to be executed once the jail is started.
 
 * `args` - (Optional. Depends on `commad`) Array of arguments to append to the command.
@@ -110,9 +110,9 @@ The pot task driver supports the following parameters:
 * `network_mode` - (Optional) Defines the network mode of the pot. Default: **"public-bridge"**
 
   Possible values are:
-  
+
   **"public-bridge"**  pot creates an internal virtual network with a NAT table where all traffic is going to be sent.
-  
+
   **"host"** pot bounds the jail directly to a host port.
 
 * `port_map` - (Optional) Sets the port on which the application is listening inside of the jail. If not set, the application will inherit the port configuration from the image.
@@ -129,8 +129,8 @@ The pot task driver supports the following parameters:
 
 * 64-bit FreeBSD 12.0-RELEASE host .
 * The FreeBSD's Nomad binary (available as a package).
-* The pot-task-driver binary placed in the [plugin_dir][plugin_dir] directory. 
-* Installing [pot][pot-github-repo] and following the install [guide][pot-install-guide].
+* The pot-task-driver binary placed in the [plugin_dir][plugin_dir] directory.
+* Installing [pot][pot-github-repo], version 0.15.0 or greater, and following the install [guide][pot-install-guide].
 * Webserver from where to serve the images. (simple file server)
 * Following lines need to be included in your rc.conf
 
@@ -139,7 +139,7 @@ nomad_user="root"
 nomad_env="PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/sbin:/bin"
 ```
 
-[pot-task-driver]: https://github.com/trivago/nomad-pot-driver/releases/download/v0.8.0/nomad-pot-driver
+[pot-task-driver]: https://github.com/trivago/nomad-pot-driver/releases/download/v0.9.0/nomad-pot-driver
 [plugin_dir]: /docs/configuration/index.html#plugin_dir
 [pot-github-repo]: https://github.com/pizzamig/pot
 [pot-install-guide]: https://github.com/pizzamig/pot/blob/master/share/doc/pot/Installation.md
