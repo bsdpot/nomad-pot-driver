@@ -39,8 +39,8 @@ job "example" {
 
       config {
         image = "https://potluck.honeyguide.net/nginx-nomad"
-        pot = "nginx-nomad-amd64-12_3"
-        tag = "1.1.6"
+        pot = "nginx-nomad-amd64-13_1"
+        tag = "1.1.13"
         command = "nginx"
         args = ["-g","'daemon off;'"]
 
@@ -77,8 +77,8 @@ task "nginx-pot" {
 
     config {
       image = "https://potluck.honeyguide.net/nginx-nomad"
-      pot = "nginx-nomad-amd64-12_3"
-      tag = "1.1.6"
+      pot = "nginx-nomad-amd64-13_1"
+      tag = "1.1.13"
       command = "nginx"
       args = ["-g","'daemon off;'"]
 
