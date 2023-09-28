@@ -30,6 +30,7 @@ type syexec struct {
 	argvCopy          []string
 	argvMount         []string
 	argvMountReadOnly []string
+	argvAttributes    []string
 	argvMem           string
 	argvEnv           string
 	argvExtraHosts    string
@@ -232,6 +233,26 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	s.cmd = cmd
 
 	s.state = &psState{Pid: s.cmd.Process.Pid, ExitCode: s.exitCode, Time: time.Now()}
+
+	//Attributes
+	if len(s.argvAttributes) > 0 {
+		for _, command := range s.argvAttributes {
+			message := potBIN + " " + command
+			s.logger.Debug("Setting pot attributes: ", message)
+
+			cmdAttr := potBIN + " " + command
+			output, err := exec.Command("sh", "-c", cmdAttr).Output()
+			if err != nil {
+				if exitError, ok := err.(*exec.ExitError); ok {
+					ws := exitError.Sys().(syscall.WaitStatus)
+					s.logger.Error("ExitError setting attributes", "exitStatus ", ws.ExitStatus())
+					return errors.New(string(output))
+				}
+				s.logger.Error("Could not get exit code for set-attributes command ", "pot", command)
+
+			}
+		}
+	}
 
 	//Copy
 	if len(s.argvCopy) > 0 {

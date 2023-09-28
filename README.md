@@ -123,6 +123,8 @@ The pot task driver supports the following parameters:
 
 * `mount_read_only` - (Optional) Mounts a read only directory inside the pot jail.
 
+* `attributes` - (Optional) List of colon separated `KEY:VALUE` pairs of jail attributes (e.g. `devfs_ruleset:3`)
+
 ## Client Requirements
 
 `pot-task-driver` requires the following:

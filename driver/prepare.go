@@ -124,6 +124,17 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 		se.argvMountReadOnly = argvMountReadOnly
 	}
 
+    // set attributes
+	if len(taskCfg.Attributes) > 0 {
+		for _, attr := range taskCfg.Attributes {
+			split := strings.Split(attr, ":")
+			attribute := split[0]
+			value := split[1]
+			command := "set-attribute -p " + potName + " -A " + attribute + " -V " + value
+			se.argvAttributes = append(se.argvAttributes, command)
+		}
+	}
+
 	// Set env variables
 	if len(cfg.EnvList()) > 0 {
 		command := potBIN + " set-env -p " + potName + " "
