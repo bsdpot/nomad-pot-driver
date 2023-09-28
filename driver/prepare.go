@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+        "github.com/alessio/shellescape"
 	"github.com/hashicorp/consul-template/signals"
 	"github.com/hashicorp/nomad/client/lib/fifo"
 	"github.com/hashicorp/nomad/plugins/drivers"
@@ -127,7 +128,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 	if len(cfg.EnvList()) > 0 {
 		command := potBIN + " set-env -p " + potName + " "
 		for name, env := range cfg.Env {
-			command = command + " -E " + name + "=" + env
+			command = command + " -E " + shellescape.Quote(name) + "=" + shellescape.Quote(env)
 		}
 		argvEnv := command
 		se.argvEnv = argvEnv

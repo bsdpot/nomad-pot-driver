@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Escape environment variables set on pot - this might break existing workarounds in jobs (#43)
+
 ## [0.9.0] - 2022-09-11
 
 ### Added
