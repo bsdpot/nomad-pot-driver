@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add optional keyword "attributes" to set attrinutes like `devfs_ruleset` on the task (#42)
 - Escape environment variables set on pot - this might break existing workarounds in jobs (#43)
 
 ## [0.9.0] - 2022-09-11
