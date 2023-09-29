@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-        "github.com/alessio/shellescape"
+	"github.com/alessio/shellescape"
 	"github.com/hashicorp/consul-template/signals"
 	"github.com/hashicorp/nomad/client/lib/fifo"
 	"github.com/hashicorp/nomad/plugins/drivers"
@@ -93,7 +93,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 	if len(taskCfg.Copy) > 0 {
 		argvCopy := make([]string, 0, 50)
 		for _, file := range taskCfg.Copy {
-			split := strings.Split(file, ":")
+			split := strings.SplitN(file, ":", 2)
 			source := split[0]
 			destination := split[1]
 			command := "copy-in -p " + potName + " -s " + source + " -d " + destination
@@ -124,13 +124,13 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 		se.argvMountReadOnly = argvMountReadOnly
 	}
 
-    // set attributes
+	// set attributes
 	if len(taskCfg.Attributes) > 0 {
 		for _, attr := range taskCfg.Attributes {
 			split := strings.Split(attr, ":")
 			attribute := split[0]
 			value := split[1]
-			command := "set-attribute -p " + potName + " -A " + attribute + " -V " + value
+			command := "set-attribute -p " + potName + " -A " + shellescape.Quote(attribute) + " -V " + shellescape.Quote(value)
 			se.argvAttributes = append(se.argvAttributes, command)
 		}
 	}
@@ -301,7 +301,7 @@ func prepareSignal(cfg *drivers.TaskConfig, taskCfg TaskConfig, sig os.Signal) (
 	return se, nil
 }
 
-func prepareExec(cfg *drivers.TaskConfig, cmd[] string) (syexec, error) {
+func prepareExec(cfg *drivers.TaskConfig, cmd []string) (syexec, error) {
 	argv := make([]string, 0, 50)
 	var se syexec
 	se.cfg = cfg
