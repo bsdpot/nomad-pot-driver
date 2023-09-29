@@ -129,10 +129,10 @@ The pot task driver supports the following parameters:
 
 `pot-task-driver` requires the following:
 
-* 64-bit FreeBSD 12.0-RELEASE host .
+* 64-bit FreeBSD 12.4-RELEASE or 13.2-RELEASE host .
 * The FreeBSD's Nomad binary (available as a package).
 * The pot-task-driver binary placed in the [plugin_dir][plugin_dir] directory.
-* Installing [pot][pot-github-repo], version 0.15.0 or greater, and following the install [guide][pot-install-guide].
+* Installing [pot][pot-github-repo], version 0.15.6 or greater, and following the install [guide][pot-install-guide].
 * Webserver from where to serve the images. (simple file server)
 * Following lines need to be included in your rc.conf
 
@@ -141,7 +141,7 @@ nomad_user="root"
 nomad_env="PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/sbin:/bin"
 ```
 
-[pot-task-driver]: https://github.com/trivago/nomad-pot-driver/releases/download/v0.9.0/nomad-pot-driver
+[pot-task-driver]: https://github.com/trivago/nomad-pot-driver/releases/download/v0.9.1/nomad-pot-driver
 [plugin_dir]: /docs/configuration/index.html#plugin_dir
 [pot-github-repo]: https://github.com/pizzamig/pot
 [pot-install-guide]: https://github.com/pizzamig/pot/blob/master/share/doc/pot/Installation.md
