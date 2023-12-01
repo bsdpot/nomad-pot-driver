@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alessio/shellescape"
 	"github.com/armon/circbuf"
 	"github.com/creack/pty"
 	hclog "github.com/hashicorp/go-hclog"
@@ -240,7 +241,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			message := potBIN + " " + command
 			s.logger.Debug("Setting pot attributes: ", message)
 
-			cmdAttr := potBIN + " " + command
+			cmdAttr := shellescape.Quote(potBIN) + " " + command
 			output, err := exec.Command("sh", "-c", cmdAttr).Output()
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
@@ -260,7 +261,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			message := potBIN + " " + command
 			s.logger.Debug("Copying files on jail: ", message)
 
-			cmdFiles := potBIN + " " + command
+			cmdFiles := shellescape.Quote(potBIN) + " " + command
 			output, err := exec.Command("sh", "-c", cmdFiles).Output()
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
@@ -280,7 +281,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			message := potBIN + " " + command
 			s.logger.Debug("Mounting files on jail: ", message)
 
-			cmdVolumes := potBIN + " " + command
+			cmdVolumes := shellescape.Quote(potBIN) + " " + command
 			output, err := exec.Command("sh", "-c", cmdVolumes).Output()
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
@@ -299,7 +300,7 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 			message := potBIN + " " + command
 			s.logger.Debug("Mounting READ only files on jail: ", message)
 
-			cmdVolumesRO := potBIN + " " + command
+			cmdVolumesRO := shellescape.Quote(potBIN) + " " + command
 			output, err := exec.Command("sh", "-c", cmdVolumesRO).Output()
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {

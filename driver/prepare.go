@@ -83,11 +83,11 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 	potName := baseName + "_" + jobIDAllocID
 
 	//Mount local
-	commandLocal := "mount-in -p " + potName + " -d " + cfg.TaskDir().LocalDir + " -m /local"
+	commandLocal := "mount-in -p " + shellescape.Quote(potName) + " -d " + shellescape.Quote(cfg.TaskDir().LocalDir) + " -m /local"
 	se.argvMount = append(se.argvMount, commandLocal)
 
 	//Mount secrets
-	commandSecret := "mount-in -p " + potName + " -d " + cfg.TaskDir().SecretsDir + " -m /secrets"
+	commandSecret := "mount-in -p " + shellescape.Quote(potName) + " -d " + shellescape.Quote(cfg.TaskDir().SecretsDir) + " -m /secrets"
 	se.argvMount = append(se.argvMount, commandSecret)
 
 	if len(taskCfg.Copy) > 0 {
@@ -96,7 +96,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 			split := strings.SplitN(file, ":", 2)
 			source := split[0]
 			destination := split[1]
-			command := "copy-in -p " + potName + " -s " + source + " -d " + destination
+			command := "copy-in -p " + shellescape.Quote(potName) + " -s " + shellescape.Quote(source) + " -d " + shellescape.Quote(destination)
 			argvCopy = append(argvCopy, command)
 		}
 		se.argvCopy = argvCopy
@@ -107,7 +107,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 			split := strings.Split(file, ":")
 			source := split[0]
 			destination := split[1]
-			command := "mount-in -p " + potName + " -d " + source + " -m " + destination
+			command := "mount-in -p " + shellescape.Quote(potName) + " -d " + shellescape.Quote(source) + " -m " + shellescape.Quote(destination)
 			se.argvMount = append(se.argvMount, command)
 		}
 	}
@@ -118,7 +118,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 			split := strings.Split(file, ":")
 			source := split[0]
 			destination := split[1]
-			command := "mount-in -p " + potName + " -d " + source + " -m " + destination + " -r"
+			command := "mount-in -p " + shellescape.Quote(potName) + " -d " + shellescape.Quote(source) + " -m " + shellescape.Quote(destination) + " -r"
 			argvMountReadOnly = append(argvMountReadOnly, command)
 		}
 		se.argvMountReadOnly = argvMountReadOnly
@@ -130,14 +130,14 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 			split := strings.Split(attr, ":")
 			attribute := split[0]
 			value := split[1]
-			command := "set-attribute -p " + potName + " -A " + shellescape.Quote(attribute) + " -V " + shellescape.Quote(value)
+			command := "set-attribute -p " + shellescape.Quote(potName) + " -A " + shellescape.Quote(attribute) + " -V " + shellescape.Quote(value)
 			se.argvAttributes = append(se.argvAttributes, command)
 		}
 	}
 
 	// Set env variables
 	if len(cfg.EnvList()) > 0 {
-		command := potBIN + " set-env -p " + potName + " "
+		command := shellescape.Quote(potBIN) + " set-env -p " + shellescape.Quote(potName) + " "
 		for name, env := range cfg.Env {
 			command = command + " -E " + shellescape.Quote(name) + "=" + shellescape.Quote(env)
 		}
@@ -146,9 +146,9 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 	}
 
 	if len(taskCfg.ExtraHosts) > 0 {
-		hostCommand := potBIN + " set-hosts -p " + potName
+		hostCommand := shellescape.Quote(potBIN) + " set-hosts -p " + shellescape.Quote(potName)
 		for _, host := range taskCfg.ExtraHosts {
-			hostCommand = hostCommand + " -H " + host
+			hostCommand = hostCommand + " -H " + shellescape.Quote(host)
 		}
 		se.argvExtraHosts = hostCommand
 	}
@@ -156,7 +156,7 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 	//Set soft memory limit
 	memoryLimit := cfg.Resources.NomadResources.Memory.MemoryMB
 	sMemoryLimit := strconv.FormatInt(memoryLimit, 10)
-	argvMem := potBIN + " set-rss -M " + sMemoryLimit + "M -p " + potName
+	argvMem := shellescape.Quote(potBIN) + " set-rss -M " + sMemoryLimit + "M -p " + potName
 	se.argvMem = argvMem
 
 	argvStart := make([]string, 0, 50)
