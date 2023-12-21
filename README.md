@@ -141,7 +141,7 @@ nomad_user="root"
 nomad_env="PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/sbin:/bin"
 ```
 
-[pot-task-driver]: https://github.com/trivago/nomad-pot-driver/releases/download/v0.9.1/nomad-pot-driver
+[pot-task-driver]: https://github.com/bsdpot/nomad-pot-driver/releases/download/v0.9.1/nomad-pot-driver
 [plugin_dir]: /docs/configuration/index.html#plugin_dir
 [pot-github-repo]: https://github.com/pizzamig/pot
 [pot-install-guide]: https://github.com/pizzamig/pot/blob/master/share/doc/pot/Installation.md

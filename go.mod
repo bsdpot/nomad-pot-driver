@@ -1,4 +1,4 @@
-module github.com/trivago/nomad-pot-driver
+module github.com/bsdpot/nomad-pot-driver
 
 go 1.15
 
