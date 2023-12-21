@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -15,6 +16,8 @@ type taskHandle struct {
 	syexec syexec
 	pid    int
 	logger hclog.Logger
+
+	calledDestroy atomic.Bool
 
 	// stateLock syncs access to all fields below
 	stateLock sync.RWMutex
