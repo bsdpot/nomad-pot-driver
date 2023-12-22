@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -36,7 +37,6 @@ type syexec struct {
 	argvEnv           string
 	argvExtraHosts    string
 	argvStart         []string
-	argvStop          []string
 	argvStats         []string
 	argvLastRunStats  []string
 	argvDestroy       []string
@@ -130,41 +130,13 @@ func (s *syexec) startContainer(commandCfg *drivers.TaskConfig) error {
 	return nil
 }
 
-func (s *syexec) stopContainer(commandCfg *drivers.TaskConfig) error {
-	s.logger.Debug("launching StopContainer command", strings.Join(s.argvStop, " "))
-
-	cmd := exec.Command(potBIN, s.argvStop...)
-
-	// set the task dir as the working directory for the command
-	cmd.Dir = commandCfg.TaskDir().Dir
-	cmd.Path = potBIN
-	cmd.Args = append([]string{cmd.Path}, s.argvStop...)
-
-	// Start the process
-	if err := cmd.Run(); err != nil {
-		// try to get the exit code
-		if exitError, ok := err.(*exec.ExitError); ok {
-			ws := exitError.Sys().(syscall.WaitStatus)
-			s.exitCode = ws.ExitStatus()
-		} else {
-			s.logger.Error("Could not get exit code for stopping container ", "pot", s.argvStop)
-			s.exitCode = defaultFailedCode
-		}
-	} else {
-		// success, exitCode should be 0 if go is ok
-		ws := cmd.ProcessState.Sys().(syscall.WaitStatus)
-		s.exitCode = ws.ExitStatus()
+func (s *syexec) destroyContainer(commandCfg *drivers.TaskConfig, calledDestroy *atomic.Bool) error {
+	if calledDestroy != nil && !calledDestroy.CompareAndSwap(false, true) {
+		return nil
 	}
 
-	s.cmd = cmd
-
-	s.state = &psState{Pid: s.cmd.Process.Pid, ExitCode: s.exitCode, Time: time.Now()}
-	return nil
-}
-
-func (s *syexec) destroyContainer(commandCfg *drivers.TaskConfig) error {
 	s.argvDestroy = append(s.argvDestroy, "-F")
-	s.logger.Debug("launching DestroyContainer command", strings.Join(s.argvDestroy, " "))
+	s.logger.Debug("launching DestroyContainer command (stops as well)", strings.Join(s.argvDestroy, " "))
 
 	cmd := exec.Command(potBIN, s.argvDestroy...)
 

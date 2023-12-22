@@ -26,14 +26,14 @@ const (
 
 	// pluginVersion allows the client to identify and use newer versions of
 	// an installed plugin
-	pluginVersion = "v0.2.1"
+	pluginVersion = "v0.10.0"
 
 	// fingerprintPeriod is the interval at which the driver will send fingerprint responses
 	fingerprintPeriod = 30 * time.Second
 
 	// taskHandleVersion is the version of task handle which this driver sets
 	// and understands how to decode driver state
-	taskHandleVersion = 1
+	taskHandleVersion = 2
 
 	// potBIN is the singularity binary path.
 	potBIN = "/usr/local/bin/pot"
@@ -350,7 +350,7 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 	if err := handle.SetDriverState(&driverState); err != nil {
 		d.logger.Error("failed to start task, error setting driver state", "error", err)
 		//Destroy container if err on setting driver state
-		se.destroyContainer(handle.Config)
+		se.destroyContainer(handle.Config, &h.calledDestroy)
 		return fmt.Errorf("failed to set driver state: %v", err)
 	}
 
@@ -411,7 +411,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		if exists == 0 {
 			if err := se.createContainer(cfg); err != nil {
 				//Destroy container if err on creation
-				err := se.destroyContainer(cfg)
+				err := se.destroyContainer(cfg, nil)
 				if err != nil {
 					d.logger.Error("Error destroying container with err: ", err)
 				}
@@ -420,7 +420,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 			d.logger.Trace("StartTask", "Created container, se:", se)
 
 			if err := se.startContainer(cfg); err != nil {
-				err := se.destroyContainer(cfg)
+				err := se.destroyContainer(cfg, nil)
 				if err != nil {
 					d.logger.Error("Error destroying container with err: ", err)
 				}
@@ -430,7 +430,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		} else {
 			d.logger.Trace("StartTask", "Container existed, se", se)
 			if err := se.startContainer(cfg); err != nil {
-				err := se.destroyContainer(cfg)
+				err := se.destroyContainer(cfg, nil)
 				if err != nil {
 					d.logger.Error("Error destroying container with err: ", err)
 				}
@@ -473,7 +473,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	if err := handle.SetDriverState(&driverState); err != nil {
 		d.logger.Error("failed to start task, error setting driver state", "error", err)
 		//Destroy container if err on setting driver state
-		se.destroyContainer(cfg)
+		se.destroyContainer(cfg, &h.calledDestroy)
 		return nil, nil, fmt.Errorf("failed to set driver state: %v", err)
 	}
 
@@ -521,7 +521,7 @@ OuterLoop:
 		handle.exitResult.ExitCode = last_run.ExitCode
 	}
 
-	err = se.destroyContainer(handle.taskConfig)
+	err = se.destroyContainer(handle.taskConfig, &handle.calledDestroy)
 	if err != nil {
 		d.logger.Error("Error destroying container with err: ", err)
 	}
@@ -547,7 +547,7 @@ func (d *Driver) potWait(taskID string, se syexec) {
 		}
 	}
 
-	err = se.destroyContainer(handle.taskConfig)
+	err = se.destroyContainer(handle.taskConfig, &handle.calledDestroy)
 	if err != nil {
 		d.logger.Error("Error destroying container with err: ", err)
 	}
@@ -603,19 +603,11 @@ func (d *Driver) StopTask(taskID string, timeout time.Duration, signal string) e
 		d.logger.Error("unable to decode driver in STOPTASK:", err)
 	}
 
-	se := prepareStop(handle.taskConfig, driverConfig)
+	se := prepareDestroy(handle.taskConfig, driverConfig)
 
 	se.logger = d.logger
 
-	if err := se.stopContainer(handle.taskConfig); err != nil {
-		se.logger.Error("unable to run stopContainer: %v", err)
-	}
-
-	se = prepareDestroy(handle.taskConfig, driverConfig)
-
-	se.logger = d.logger
-
-	if err := se.destroyContainer(handle.taskConfig); err != nil {
+	if err := se.destroyContainer(handle.taskConfig, &handle.calledDestroy); err != nil {
 		return fmt.Errorf("unable to run destroyContainer: %v", err)
 	}
 

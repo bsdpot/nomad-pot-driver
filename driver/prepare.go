@@ -163,10 +163,6 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 	argvStart = append(argvStart, "start", potName)
 	se.argvStart = argvStart
 
-	argvStop := make([]string, 0, 50)
-	argvStop = append(argvStop, "stop", potName)
-	se.argvStop = argvStop
-
 	argvStats := make([]string, 0, 50)
 	argvStats = append(argvStats, "get-rss", "-p", potName, "-J")
 	se.argvStats = argvStats
@@ -229,27 +225,6 @@ func (s *syexec) Close() {
 	}
 }
 
-func prepareStop(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
-	argv := make([]string, 0, 50)
-	var se syexec
-	se.taskConfig = taskCfg
-	se.cfg = cfg
-	se.env = cfg.EnvList()
-
-	// action can be run/exec
-
-	argv = append(argv, "stop")
-
-	parts := strings.Split(cfg.ID, "/")
-	completeName := parts[1] + "_" + parts[2] + "_" + parts[0]
-
-	argv = append(argv, completeName)
-
-	se.argvStop = append(argv, taskCfg.Args...)
-
-	return se
-}
-
 func prepareDestroy(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	argv := make([]string, 0, 50)
 	var se syexec
@@ -264,9 +239,7 @@ func prepareDestroy(cfg *drivers.TaskConfig, taskCfg TaskConfig) syexec {
 	parts := strings.Split(cfg.ID, "/")
 	completeName := parts[1] + "_" + parts[2] + "_" + parts[0]
 
-	argv = append(argv, "-p", completeName)
-
-	se.argvDestroy = append(argv, taskCfg.Args...)
+	se.argvDestroy = append(argv, "-p", completeName)
 
 	return se
 
