@@ -36,6 +36,7 @@ type syexec struct {
 	argvMem           string
 	argvEnv           string
 	argvExtraHosts    string
+	argvAliases       string
 	argvStart         []string
 	argvStats         []string
 	argvLastRunStats  []string
@@ -303,6 +304,16 @@ func (s *syexec) createContainer(commandCfg *drivers.TaskConfig) error {
 	_, err = exec.Command("sh", "-c", s.argvExtraHosts).Output()
 	if err != nil {
 		message := "Error setting hosts file for pot with err: " + err.Error()
+		return errors.New(string(message))
+	}
+
+	// Setting aliases for the pot 
+	aliasesMessage := "Setting pot aliases: " + s.argvAliases
+	s.logger.Debug(aliasesMessage)
+
+	_, err = exec.Command("sh", "-c", s.argvAliases).Output()
+	if err != nil {
+		message := "Error setting aliases for pot with err: " + err.Error()
 		return errors.New(string(message))
 	}
 
