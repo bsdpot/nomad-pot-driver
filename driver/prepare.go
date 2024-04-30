@@ -153,6 +153,13 @@ func prepareContainer(cfg *drivers.TaskConfig, taskCfg TaskConfig) (syexec, erro
 		se.argvExtraHosts = hostCommand
 	}
 
+	if len(taskCfg.Aliases) > 0 {
+		aliasesCommand := shellescape.Quote(potBIN) + " set-aliases -p " + shellescape.Quote(potName)
+		for _, alias := range taskCfg.Aliases {
+			aliasesCommand = aliasesCommand + " -A " + shellescape.Quote(alias)
+		}
+		se.argvAliases = aliasesCommand
+	}
 	//Set soft memory limit
 	memoryLimit := cfg.Resources.NomadResources.Memory.MemoryMB
 	sMemoryLimit := strconv.FormatInt(memoryLimit, 10)
