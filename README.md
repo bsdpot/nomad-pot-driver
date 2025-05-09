@@ -1,3 +1,4 @@
+# THIS REPOSITORY IS NO LONGER ACTIVELY MAINTAINED, IT HAS MOVED TO https://codeberg.org/bsdpot/nomad-pot-driver
 <p align="center">
 <img width="350" src="mascot.png" />
 </p>
